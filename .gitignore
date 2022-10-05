@@ -6,3 +6,6 @@ doc/
 geoda/
 qgis/
 results/
+src/.Rprofile
+src/.Rhistory
+.vscode/
