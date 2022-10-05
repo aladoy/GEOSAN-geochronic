@@ -29,6 +29,7 @@ engine, conn, cursor = db.connect_db('geosan', 'aladoy')
 # READ TABLE (ORDER BY DATE_RECEPTION)
 sql = ("SELECT * "
        "FROM geocovid.s3_notfiltered_tests_geo "
+       "WHERE date_reception >= (SELECT MIN(date_reception) FROM geocovid.s3_notfiltered_tests_geo WHERE res_cov=1) "
        "ORDER BY date_reception ASC")
 data = gpd.read_postgis(sql, conn, geom_col='geometry')
 data['date_reception'] = pd.to_datetime(data.date_reception)
@@ -39,6 +40,7 @@ print('Are data ordered by reception date: ',
 print('Dataset size: ', data.shape)
 print('Is attribute id_demande_study2 unique? ',
       data.id_demande_study2.is_unique)
+print('Number of individuals: ', len(data.id_patient_study2.unique()))
 idx_dup = data[data.duplicated(
     subset='id_patient_study2', keep=False)].id_patient_study2.unique()
 print('Number of individuals with several demands: ', len(idx_dup))
@@ -111,9 +113,11 @@ def add_waves(df):
     df.loc[df.date_reception.between(
         '2020-07-01', '2020-12-15', inclusive='both'), 'wave'] = 2
     df.loc[df.date_reception.between(
-        '2020-12-16', '2021-08-18', inclusive='both'), 'wave'] = 3
+        '2020-12-16', '2021-05-06', inclusive='both'), 'wave'] = 3
     df.loc[df.date_reception.between(
-        '2021-08-19', max(df.date_reception), inclusive='both'), 'wave'] = 4
+        '2021-05-07', '2021-11-27', inclusive='both'), 'wave'] = 4
+    df.loc[df.date_reception.between(
+        '2021-11-28', max(df.date_reception), inclusive='both'), 'wave'] = 5
 
     return df
 
@@ -126,6 +130,7 @@ pos_w1_mean, pos_w1_median = cov_pos_duration(data[data.wave == 1])
 pos_w2_mean, pos_w2_median = cov_pos_duration(data[data.wave == 2])
 pos_w3_mean, pos_w3_median = cov_pos_duration(data[data.wave == 3])
 pos_w4_mean, pos_w4_median = cov_pos_duration(data[data.wave == 4])
+pos_w5_mean, pos_w5_median = cov_pos_duration(data[data.wave == 5])
 
 
 # PROCESS MULTIPLE DEMANDS
