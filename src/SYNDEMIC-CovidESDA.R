@@ -17,26 +17,24 @@ con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= rstudioa
 sql_covid <- "SELECT * FROM syndemic.covid_lausregion_analysis"
 covid.sf <- read_sf(con, query=sql_covid)
 
-
 # Prevalence
 # At reli point
 sql_prev_pt <- "SELECT r.reli, COUNT(*) as n_test, SUM(s.res_cov) as n_pos, AVG(s.viral_load) as m_vr, AVG(s.age) as m_age, r.geometry FROM syndemic.covid_lausregion_analysis s 
-INNER JOIN vd_reli_centroid r ON r.reli = s.reli where wave=2
+INNER JOIN vd_reli_centroid r ON r.reli = s.reli
 GROUP BY r.reli, r.geometry"
 prev.pt_sf <- read_sf(con, query=sql_prev_pt)
 
 # At reli polygon
 sql_prev_pl <- "SELECT r.reli, COUNT(*) as n_test, SUM(s.res_cov) as n_pos, AVG(s.viral_load) as m_vr, AVG(s.age) as m_age, r.geometry FROM syndemic.covid_lausregion_analysis s 
-INNER JOIN vd_reli_polygon r ON r.reli = s.reli where wave=2
+INNER JOIN vd_reli_polygon r ON r.reli = s.reli
 GROUP BY r.reli, r.geometry"
 prev.pl_sf <- read_sf(con, query=sql_prev_pl)
 
 
-
 # EMPIRICAL LOGIT PREVALENCE ----------------------------------------------
 
-prev.pl_sf$logit <- log((prev.pl_sf$n_pos+0.5)/(prev.pl_sf$n_test-prev.pl_sf$n_pos+0.5))
-prev.pl_sf$prev <- log((prev.pl_sf$n_pos+0.5)/(prev.pl_sf$n_test+0.5))
+#prev.pl_sf$logit <- log((prev.pl_sf$n_pos+0.5)/(prev.pl_sf$n_test-prev.pl_sf$n_pos+0.5))
+prev.pl_sf$logincid <- log((prev.pl_sf$n_pos+0.5)/(prev.pl_sf$n_test+0.5))
 
 # Extract prevalence and logit per wave
 extract_prev_waves <- function(con, wave){
@@ -47,7 +45,7 @@ extract_prev_waves <- function(con, wave){
                          GROUP BY s.reli", 
                          w = wave)
   data <- tibble(dbGetQuery(con, query))
-  data <- data %>% mutate(prev = log((n_pos+0.5)/(n_test+0.5)), logit = log((n_pos+0.5)/(n_test-n_pos+0.5)))
+  data <- data %>% mutate(logincid = log((n_pos+0.5)/(n_test+0.5)))
   colnames(data) <- paste0(colnames(data),"_w", wave)
   
   return(data)
@@ -57,10 +55,11 @@ extract_prev_waves <- function(con, wave){
 all_prev.pl_sf <- prev.pl_sf %>% inner_join(extract_prev_waves(con, 1), by = c("reli"="reli_w1")) %>%
   left_join(extract_prev_waves(con, 2), by = c("reli"="reli_w2")) %>% 
   left_join(extract_prev_waves(con, 3), by = c("reli"="reli_w3")) %>% 
-  left_join(extract_prev_waves(con, 4), by = c("reli"="reli_w4"))
+  left_join(extract_prev_waves(con, 4), by = c("reli"="reli_w4")) %>%
+  left_join(extract_prev_waves(con, 5), by = c("reli"="reli_w5"))
 
 # Save
-all_prev.pl_sf %>% write_sf("processed_data/prev_reli_covid_waves.gpkg", driver='GPKG')
+all_prev.pl_sf %>% write_sf("processed_data/incidence_reli_covid_waves.gpkg", driver='GPKG')
 
 
 # SAMPLE SIZES ------------------------------------------------------------
@@ -91,6 +90,7 @@ stats_covid(covid.sf, 1)
 stats_covid(covid.sf, 2)
 stats_covid(covid.sf, 3)
 stats_covid(covid.sf, 4)
+stats_covid(covid.sf, 5)
 
 
 
