@@ -30,33 +30,59 @@ f2_noreli <- f2_noreli %>% left_join(reli.sf %>% st_drop_geometry(), by=c('neare
 f2.sf <- f2.sf %>% left_join(f2_noreli, by='pt', suffix=c("","_no"))
 f2.sf <- f2.sf %>% mutate(reli=if_else(!is.na(reli_no), reli_no, reli), b21btot=if_else(!is.na(b21btot_no), b21btot_no, b21btot)) %>% select(-c(rowname, reli_no, b21btot_no))
 
+
+# GEOCOVID
+sql_gc <- "SELECT id_demande_study2, geometry FROM geocovid.s3_20dfiltered_tests_geo"
+gc.sf <- read_sf(con, query=sql_gc)
+# Add RELI
+gc.sf <- gc.sf %>% st_join(reli.sf , left=TRUE, on=st_within)
+gc_noreli <- gc.sf %>% filter(is.na(reli)) %>% dplyr::select(id_demande_study2)
+nearest<- st_nn(gc_noreli,reli.sf,k=1,returnDist = F) 
+gc_noreli <- gc_noreli %>% mutate(nearest=sapply(nearest , "[[", 1))
+gc_noreli <- gc_noreli %>% left_join(reli.sf %>% st_drop_geometry(), by=c('nearest'='rowname')) %>% dplyr::select(-c(nearest)) %>% st_drop_geometry()
+gc.sf <- gc.sf %>% left_join(gc_noreli, by='id_demande_study2', suffix=c("","_no"))
+gc.sf <- gc.sf %>% mutate(reli=if_else(!is.na(reli_no), reli_no, reli), b21btot=if_else(!is.na(b21btot_no), b21btot_no, b21btot)) %>% dplyr::select(-c(rowname, reli_no, b21btot_no))
+
+
 # UPDATE TABLE IN POSTGIS ----------------------------------------------
 #Add new columns
 dbGetQuery(con, "ALTER TABLE syndemic.colaus_f2 ADD COLUMN reli BIGINT")
 dbGetQuery(con, "ALTER TABLE syndemic.colaus_f2 ADD COLUMN reli_b21btot BIGINT")
 
+dbGetQuery(con, "ALTER TABLE geocovid.s3_20dfiltered_tests_geo ADD COLUMN reli BIGINT")
+dbGetQuery(con, "ALTER TABLE geocovid.s3_20dfiltered_tests_geo ADD COLUMN reli_b21btot BIGINT")
+
 #Function to update Postgres table
 update_postgres_table <- function(tabledb, id, reli, ptot){
-  sql1<-"UPDATE ?table SET reli = ?new_col WHERE pt = ?id"
+  
+  if (tabledb == "syndemic.colaus_f2"){
+    sql1<-"UPDATE ?table SET reli = ?new_col WHERE pt = ?id"
+    sql2<-"UPDATE ?table SET reli_b21btot = ?new_col WHERE pt = ?id"
+  }
+  else if (tabledb == "geocovid.s3_20dfiltered_tests_geo"){
+    sql1<-"UPDATE ?table SET reli = ?new_col WHERE id_demande_study2 = ?id"
+    sql2<-"UPDATE ?table SET reli_b21btot = ?new_col WHERE id_demande_study2 = ?id"
+  }
+  
+
   query1 <- sqlInterpolate(con, sql1,
                  table = SQL(tabledb),
                  new_col = SQL(reli),
-                 id = SQL(id)
+                 id = dbQuoteString(ANSI(),id)
   )
   dbGetQuery(con, query1)
   
-  
-  sql2<-"UPDATE ?table SET reli_b21btot = ?new_col WHERE pt = ?id"
   query2 <- sqlInterpolate(con, sql2,
                           table = SQL(tabledb),
                           new_col = SQL(ptot),
-                          id = SQL(id)
+                          id = dbQuoteString(ANSI(),id)
   )
   dbGetQuery(con, query2)
 }
 
 #Map for every rows (Normal if an error appears, still working)
 pmap(list("syndemic.colaus_f2", f2.sf$pt, f2.sf$reli,  f2.sf$b21btot), update_postgres_table)
+pmap(list("geocovid.s3_20dfiltered_tests_geo", gc.sf$id_demande_study2, gc.sf$reli,  gc.sf$b21btot), update_postgres_table)
 
 # To visually verify that all points were reasonably close from a RELI
 # f2_noreli %>% inner_join(f2.sf %>% select(pt, geometry), by='pt') %>% st_write("f2_noreli.shp")
