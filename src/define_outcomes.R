@@ -237,3 +237,5 @@ data.outcomes <- data %>% select(pt, all_of(outcomes.all))
 lapply(outcomes.all, print_final_stats)
 
 st_write(data.outcomes, "../processed_data/f2_outcomes.gpkg", driver='GPKG', delete_layer=TRUE)
+
+DBI::dbDisconnect(con)
