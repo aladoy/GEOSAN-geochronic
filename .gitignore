@@ -2,6 +2,7 @@ data/
 processed_data/
 .Rproj.user/
 src/TRASH/
+src/OLD/
 doc/
 geoda/
 qgis/
