@@ -6,9 +6,9 @@ HOSTNAME='localhost'
 
 psql -h $HOSTNAME -U $USERNAME $DATABASE << EOF
 
-DROP TABLE IF EXISTS syndemic.colaus_b CASCADE;
+DROP TABLE IF EXISTS geochronic.colaus_b CASCADE;
 
-CREATE TABLE syndemic.colaus_b(
+CREATE TABLE geochronic.colaus_b(
     pt integer PRIMARY KEY,
     sex integer NOT NULL CHECK (sex IN (0,1)),
     datexam date NOT NULL,
@@ -50,9 +50,9 @@ CREATE TABLE syndemic.colaus_b(
 );
 
 
-DROP TABLE IF EXISTS syndemic.colaus_f1 CASCADE;
+DROP TABLE IF EXISTS geochronic.colaus_f1 CASCADE;
 
-CREATE TABLE syndemic.colaus_f1(
+CREATE TABLE geochronic.colaus_f1(
     pt integer PRIMARY KEY,
     F1sex integer NOT NULL CHECK (F1sex IN (0,1)),
     F1datexam date NOT NULL,
@@ -84,9 +84,9 @@ CREATE TABLE syndemic.colaus_f1(
     geometry geometry(Point, 2056)
 );
 
-DROP TABLE IF EXISTS syndemic.colaus_f2 CASCADE;
+DROP TABLE IF EXISTS geochronic.colaus_f2 CASCADE;
 
-CREATE TABLE syndemic.colaus_f2(
+CREATE TABLE geochronic.colaus_f2(
     pt integer PRIMARY KEY,
     F2sex integer CHECK (F2sex IN (0,1)),
     F2datexam date,
@@ -154,9 +154,9 @@ CREATE TABLE syndemic.colaus_f2(
     geometry geometry(Point, 2056)
 );
 
-DROP TABLE IF EXISTS syndemic.colaus_f3;
+DROP TABLE IF EXISTS geochronic.colaus_f3;
 
-CREATE TABLE syndemic.colaus_f3(
+CREATE TABLE geochronic.colaus_f3(
     pt integer PRIMARY KEY,
     F3sex integer NOT NULL CHECK (F3sex IN (0,1)),
     F3datexam date,

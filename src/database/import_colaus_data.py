@@ -1,7 +1,7 @@
 '''
 For each CoLaus dataset (Baseline, F1, F2, F3), the code
 retrieves the individual's addresses and import the GeoDataFrame
-in GEOSAN DB (schema=syndemic).
+in GEOSAN DB (schema=geochronic).
 '''
 
 import pandas as pd
@@ -21,7 +21,7 @@ except FileNotFoundError:
 
 def main():
 
-    project_dir: str = r"/mnt/data/GEOSAN/RESEARCH PROJECTS/COLAUS NCDS @ LASIG (EPFL)/GEOSAN-colaus-ncds/"
+    project_dir: str = r"/mnt/data/GEOSAN/RESEARCH PROJECTS/GEOCHRONIC @ LASIG (EPFL)/GEOSAN-geochronic/"
     data_dir: str = r"/mnt/data/GEOSAN/GEOSAN DB/data/COLAUS"
 
     # REDIRECT STDOUT INTO TEXT FILE
@@ -47,7 +47,7 @@ def main():
     b = b.astype({'brnsws': 'Int64', 'edtyp3': 'Int64', 'edtyp4': 'Int64', 'mrtsts2': 'Int64', 'job_curr8': 'Int64', 'cvdbase': 'Int64', 'cvdbase_adj': 'Int64',
                   'sbsmk': 'Int64', 'HTA': 'Int64', 'hctld': 'Int64', 'dbtld': 'Int64', 'DIAB': 'Int64', 'phyact': 'Int64', 'plz4': 'Int64', 'plz4_init': 'Int64'})
     db.import_data('geosan', 'aladoy', b, 'colaus_b', pk='NULL',
-                   schema='syndemic', idx_geom=True, ifexists='replace')
+                   schema='geochronic', idx_geom=True, ifexists='replace')
 
     print()
     print('FOLLOW-UP 1')
@@ -67,7 +67,7 @@ def main():
     f1 = f1.astype({'F1mrtsts2': 'Int64', 'F1job_curr8': 'Int64', 'F1sbsmk': 'Int64', 'F1HTA': 'Int64',
                     'F1hctld': 'Int64', 'F1dbtld': 'Int64', 'F1DIAB': 'Int64', 'F1CVD': 'Int64', 'plz4': 'Int64', 'plz4_init': 'Int64'})
     db.import_data('geosan', 'aladoy', f1, 'colaus_f1', pk='NULL',
-                   schema='syndemic', idx_geom=True, ifexists='replace')
+                   schema='geochronic', idx_geom=True, ifexists='replace')
 
     print()
     print('FOLLOW-UP 2')
@@ -88,7 +88,7 @@ def main():
     for column in ['F2sex', 'F2mrtsts', 'F2mrtsts2', 'F2dmst', 'F2nochd', 'F2sclhlp1', 'F2sclhlp2', 'F2job_curr1', 'F2job_curr4', 'F2job_curr7', 'F2job_not1', 'F2job_prev4', 'F2family18', 'F2income1', 'F2income2', 'F2income3', 'F2income4', 'F2income5', 'F2income6', 'F2Quest1', 'F2conso_hebdo', 'F2alcool2', 'F2sbsmk', 'F2hypdr', 'F2crbpmed', 'F2HTA', 'F2hctld', 'F2hypolip', 'F2dbtld', 'F2orldrg', 'F2insn', 'F2antiDIAB', 'F2DIAB', 'F2care1', 'F2care1b', 'F2care2', 'F2seden', 'F2BMI_cat2', 'F2waist_cat', 'Polypharm', 'F2CVD', 'plz4']:
         f2[column] = f2[column].astype('Int64')
     db.import_data('geosan', 'aladoy', f2, 'colaus_f2', pk='NULL',
-                   schema='syndemic', idx_geom=True, ifexists='replace')
+                   schema='geochronic', idx_geom=True, ifexists='replace')
 
     print()
     print('FOLLOW-UP 3')
@@ -109,7 +109,7 @@ def main():
     for column in ['F3mrtsts', 'F3mrtsts2', 'F3dmst', 'F3nochd', 'F3sclhlp3', 'F3job_curr1', 'F3job_curr4', 'F3job_curr7', 'F3job_not2', 'F3job_prev3', 'F3income3', 'F3income4', 'F3income5', 'F3income6', 'F3assur1', 'F3Quest1', 'F3conso_hebdo', 'F3alcool2', 'F3sbsmk', 'F3hypdr', 'F3crbpmed', 'F3HTA', 'F3hctld', 'F3dbtld', 'F3DIAB', 'F3care1', 'F3care1a', 'F3care1b', 'F3care3', 'F3care3a', 'F3care4', 'F3care4a', 'F3IPAQ_excl', 'F3IPAQ_score', 'F3BMI_cat2', 'F3waist_cat', 'Polypharm', 'F3CVD', 'plz4']:
         f3[column] = f3[column].astype('Int64')
     db.import_data('geosan', 'aladoy', f3, 'colaus_f3', pk='NULL',
-                   schema='syndemic', idx_geom=True, ifexists='replace')
+                   schema='geochronic', idx_geom=True, ifexists='replace')
 
     # CLOSE OUTPUT FILE
     sys.stdout.close()

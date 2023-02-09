@@ -17,11 +17,12 @@ def main():
     execute_code(subdir_db, "create_materialized_views.sh", interpreter='sh')
     execute_code(subdir_db, "comment_tables.sh", interpreter='sh')
 
-    execute_code(None,"define_outcomes.R", interpreter='R')
+    #subdir_wrang = "database"
+    #execute_code(subdir_wrang, "define_outcomes.R", interpreter='R')
 
 
 def execute_code(program_subdir, program_name, interpreter="python"):
-    src_dir: str = r"/mnt/data/GEOSAN/RESEARCH PROJECTS/COLAUS NCDS @ LASIG (EPFL)/GEOSAN-colaus-ncds/src"
+    src_dir: str = r"/mnt/data/GEOSAN/RESEARCH PROJECTS/GEOCHRONIC @ LASIG (EPFL)/GEOSAN-geochronic/src"
     program = os.sep.join([src_dir, program_subdir, program_name])
     subprocess.call([interpreter, program])
     print("Finished:" + program)
