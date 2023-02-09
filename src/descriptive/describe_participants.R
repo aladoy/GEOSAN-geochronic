@@ -3,7 +3,9 @@
 library(tidyverse)
 library(sf)
 require(RPostgreSQL)
+source('/mnt/data/GEOSAN/FUNCTIONS/GIRAPH-functions/geosan_funcs/password_utils.R')
 
+setwd("/mnt/data/GEOSAN/RESEARCH PROJECTS/GEOCHRONIC @ LASIG (EPFL)/GEOSAN-geochronic/src/")
 
 # FUNCTIONS ---------------------------------------------------------------
 
@@ -16,7 +18,7 @@ capture <- function(result){
 }
 
 retrieve_dataset <- function(table_name, con){
-  query <- paste0("SELECT * FROM syndemic.", table_name,";")
+  query <- paste0("SELECT * FROM geochronic.", table_name,";")
   table <- read_sf(con, query=query)
 }
 
@@ -49,7 +51,7 @@ covariate_stats <- function(var, df){
 file_res=paste0("../results/code_outputs/describe_participants.txt")
 cat(paste0("Date:", Sys.Date(),'\n'), file = file_res, append = FALSE) #Overwrite the file
 
-con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= rstudioapi::askForPassword("Database user"),rstudioapi::askForPassword("Database password"),dbname="geosan")
+con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",askForPassword(),dbname="geosan")
 
 indiv.b <- retrieve_dataset("b_geo_vaud", con)
 indiv.b <- indiv.b %>% mutate(datexam = as.Date(datexam))

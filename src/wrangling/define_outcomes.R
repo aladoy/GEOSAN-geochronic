@@ -3,10 +3,12 @@
 library(tidyverse)
 library(sf)
 require(RPostgreSQL)
+source('/mnt/data/GEOSAN/FUNCTIONS/GIRAPH-functions/geosan_funcs/password_utils.R')
 
-con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= rstudioapi::askForPassword("Database user"),rstudioapi::askForPassword("Database password"),dbname="geosan")
-data <- read_sf(con, query="SELECT * FROM syndemic.f2_geo_vaud")
+setwd("/mnt/data/GEOSAN/RESEARCH PROJECTS/GEOCHRONIC @ LASIG (EPFL)/GEOSAN-geochronic/src/")
 
+con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",askForPassword(),dbname="geosan")
+data <- read_sf(con, query="SELECT * FROM geochronic.f2_geo_vaud")
 
 # FUNCTIONS ---------------------------------------------------------------
 
@@ -71,7 +73,7 @@ data <- data %>%
     if_all(all_of(outcomes.cvd), ~is.na(.)) ~ NaN, 
     TRUE ~ 0))
 
-count_unique_combinations("cvd") %>% distinct() %>% capture()
+count_unique_combinations("cvd") %>% capture()
 
 
 # Obesity ----------------------------------------------------------------

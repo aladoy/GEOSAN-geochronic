@@ -14,7 +14,7 @@ DROP MATERIALIZED VIEW IF EXISTS geochronic.population_reli;
 
 CREATE MATERIALIZED VIEW geochronic.f2_geo_vaud
 AS
-SELECT f2.* FROM geochronic.colaus_f2 f2
+SELECT * FROM geochronic.colaus_f2 f2
 INNER JOIN 
 (SELECT pt, brnsws, datarrival, bthpl_dem, ethori_self, lvplyr, edtyp3, edtyp4, mrtsts2, cvdbase, cvdbase_adj FROM  geochronic.colaus_b) b
 USING (pt)
