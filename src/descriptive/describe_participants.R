@@ -16,7 +16,7 @@ capture <- function(result){
 }
 
 retrieve_dataset <- function(table_name, con){
-  query <- paste0("SELECT * FROM syndemic.", table_name," WHERE NOT ST_IsEmpty(geometry);")
+  query <- paste0("SELECT * FROM syndemic.", table_name,";")
   table <- read_sf(con, query=query)
 }
 
@@ -51,10 +51,10 @@ cat(paste0("Date:", Sys.Date(),'\n'), file = file_res, append = FALSE) #Overwrit
 
 con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= rstudioapi::askForPassword("Database user"),rstudioapi::askForPassword("Database password"),dbname="geosan")
 
-indiv.b <- retrieve_dataset("colaus_b", con)
+indiv.b <- retrieve_dataset("b_geo_vaud", con)
 indiv.b <- indiv.b %>% mutate(datexam = as.Date(datexam))
 
-indiv.f2 <- retrieve_dataset("colaus_f2_complete", con) # including sex, age, etc. from colaus_baseline
+indiv.f2 <- retrieve_dataset("f2_geo_vaud", con) # including sex, age, etc. from colaus_baseline
 indiv.f2  <- indiv.f2  %>% mutate(f2datexam = as.Date(f2datexam))
 
 # Define individual covariates --------------------------------------------
@@ -71,7 +71,7 @@ indiv.b <- indiv.b %>% mutate(
                       (conso_hebdo>=14 & conso_hebdo<=34) ~2,
                       conso_hebdo >= 35 ~3),
   phyact = replace(phyact, phyact==9, NA),
-  inactivity = if_else(phyact %in% c(0,1), 1, 0)
+  inactivity = if_else(phyact == 0, 1, 0)
 )
 
 
@@ -102,6 +102,7 @@ indiv.b <- indiv.b %>% select(pt, datexam, all_of(cov.b))
 
 write(paste("Number of individuals:", indiv.b %>% nrow()))
 write(paste("Time range:", min(indiv.b$datexam), "/", max(indiv.b$datexam)))
+write(paste("Min / Max age:", min(indiv.b$age), "/", max(indiv.b$age)))
 
 lapply(cov.b, covariate_stats, df=indiv.b)
 
@@ -115,6 +116,7 @@ indiv.f2 <- indiv.f2 %>% select(pt, f2datexam, all_of(cov.f2))
 
 write(paste("Number of individuals:", indiv.f2 %>% nrow()))
 write(paste("Time range:", min(indiv.f2$f2datexam, na.rm=TRUE), "/", max(indiv.f2$f2datexam, na.rm=TRUE)))
+write(paste("Min / Max age:", min(indiv.f2$age), "/", max(indiv.f2$age)))
 
 lapply(cov.f2, covariate_stats, df=indiv.f2)
 

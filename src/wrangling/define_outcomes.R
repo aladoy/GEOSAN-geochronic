@@ -5,7 +5,7 @@ library(sf)
 require(RPostgreSQL)
 
 con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= rstudioapi::askForPassword("Database user"),rstudioapi::askForPassword("Database password"),dbname="geosan")
-data <- read_sf(con, query="SELECT * FROM syndemic.colaus_f2_complete")
+data <- read_sf(con, query="SELECT * FROM syndemic.f2_geo_vaud")
 
 
 # FUNCTIONS ---------------------------------------------------------------
