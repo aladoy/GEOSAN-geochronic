@@ -508,7 +508,8 @@ def correct_addr(df, period_name):
         df.loc[df.pt == 2618, 'deinr'] = '17'
         df.loc[df.pt == 4869, 'deinr'] = '42'
         df.loc[df.pt == 5260, 'deinr'] = '16'
-        df.loc[df.pt.isin([353, 459, 532, 897, 908, 1654, 1941, 2537, 2717, 3477, 5671, 6001, 6457]), 'npa'] = 1018
+        df.loc[df.pt.isin([353, 459, 532, 897, 908, 1654, 1941,
+                          2537, 2717, 3477, 5671, 6001, 6457]), 'npa'] = 1018
 
     else:
         pass
