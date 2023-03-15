@@ -10,7 +10,7 @@ def main():
     # Build the spatial database
     subdir_db = "database"
     subdir_wrang = "wrangling"
-    subdir_wrang = "descriptive"
+    subdir_descr = "descriptive"
 
     # Import dataset to DB
     execute_code(subdir_wrang, "re_geocode_colaus.py")
@@ -20,14 +20,19 @@ def main():
     execute_code(subdir_db, "create_materialized_views.sh", interpreter='sh')
     execute_code(subdir_db, "comment_tables.sh", interpreter='sh')
 
-    # execute_code(subdir_wrang, "define_outcomes.R", interpreter='Rscript')
+    # Define outcomes and covariates
+    execute_code(subdir_descr, "describe_participants.R",
+                 interpreter='Rscript')
+    execute_code(subdir_wrang, "define_outcomes.R", interpreter='Rscript')
+    execute_code(subdir_db, "create_study_dataset.py")
 
-    # execute_code(subdir_wrang, "describe_participants.R",
-    #              interpreter='Rscript')
+    # Assig to RELI and imputation of missing values
+    execute_code(subdir_wrang, "assign_to_reli.py")
 
-    # execute_code(subdir_db, "create_study_dataset.py")
+    # add missing values handling
+    # add residential history - moved or not since last fw?
 
-    # execute_code(subdir_wrang, "assign_to_reli.py")
+    # ESDA
 
 
 def execute_code(program_subdir, program_name, interpreter="python"):

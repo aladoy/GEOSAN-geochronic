@@ -33,8 +33,11 @@ def main():
 
     # Add this to GEOSAN DB table
     table_name = "geochronic.f2_study_dataset"
-    cursor.execute(f"ALTER TABLE {table_name} DROP COLUMN reli;")
-    conn.commit()
+    try:
+        cursor.execute(f"ALTER TABLE {table_name} DROP COLUMN reli;")
+        conn.commit()
+    except:
+        conn.rollback()
     cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN reli integer;")
     conn.commit()
 
@@ -47,7 +50,7 @@ def main():
     conn.commit()
 
     cursor.execute(f"SELECT * FROM {table_name} WHERE reli IS NULL")
-    print("Check that everything was correctly inserted into DB " +
+    print("Check that everything was correctly inserted into DB: " +
           str(len(cursor.fetchall()) == 0))
 
     conn.close()
