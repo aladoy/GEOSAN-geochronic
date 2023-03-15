@@ -13,9 +13,9 @@ import psycopg2 as ps
 # ??? IN THE GIRAPH-functions REPOSITORY (git checkout geocoding_v2)
 sys.path.append(r"/mnt/data/GEOSAN/FUNCTIONS/GIRAPH-functions/")
 try:
-    import geocoding_utils as g
-    import db_utils as db
-    import basic_utils as bu
+    import geocoding_utils as g  # commit: bf78b2d
+    import db_utils as db  # commit: bf78b2d
+    import basic_utils as bu  # commit: bf78b2d
 except FileNotFoundError:
     print("Wrong file or file path")
 
