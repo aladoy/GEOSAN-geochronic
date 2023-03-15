@@ -6,25 +6,18 @@ HOSTNAME='localhost'
 
 psql -h $HOSTNAME -U $USERNAME $DATABASE << EOF
 
+DROP TABLE IF EXISTS geochronic.f2_geo_vaud;
 DROP MATERIALIZED VIEW IF EXISTS geochronic.cf2_laus_analysis;
-DROP MATERIALIZED VIEW IF EXISTS geochronic.f2_geo_vaud;
-DROP MATERIALIZED VIEW IF EXISTS geochronic.b_geo_vaud;
 DROP MATERIALIZED VIEW IF EXISTS geochronic.covid_laus_analysis;
 DROP MATERIALIZED VIEW IF EXISTS geochronic.population_reli;
 
-CREATE MATERIALIZED VIEW geochronic.f2_geo_vaud
+CREATE TABLE geochronic.f2_geo_vaud
 AS
 SELECT * FROM geochronic.colaus_f2 f2
 INNER JOIN 
 (SELECT pt, brnsws, datarrival, bthpl_dem, ethori_self, lvplyr, edtyp3, edtyp4, mrtsts2, cvdbase, cvdbase_adj FROM  geochronic.colaus_b) b
 USING (pt)
 WHERE NOT ST_IsEmpty(f2.geometry) AND ST_Intersects(f2.geometry, (SELECT ST_Union(geometry) as geometry FROM vd_canton));
-
-CREATE MATERIALIZED VIEW geochronic.b_geo_vaud
-AS
-SELECT b.* 
-FROM geochronic.colaus_b b, vd_canton vd
-WHERE NOT ST_IsEmpty(b.geometry) AND ST_Intersects(b.geometry, vd.geometry);
 
 CREATE MATERIALIZED VIEW geochronic.cf2_laus_analysis
 AS
