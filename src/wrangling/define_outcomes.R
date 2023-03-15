@@ -7,8 +7,8 @@ source('/mnt/data/GEOSAN/FUNCTIONS/GIRAPH-functions/geosan_funcs/password_utils.
 
 setwd("/mnt/data/GEOSAN/RESEARCH PROJECTS/GEOCHRONIC @ LASIG (EPFL)/GEOSAN-geochronic/src/")
 
-con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",askForPassword(),dbname="geosan")
-#con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",rstudioapi::askForPassword(),dbname="geosan")
+#con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",askForPassword(),dbname="geosan")
+con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",rstudioapi::askForPassword(),dbname="geosan")
 
 data <- read_sf(con, query="SELECT * FROM geochronic.f2_geo_vaud")
 
@@ -239,6 +239,9 @@ outcomes.all <- c("cvd", "obesity", "diabetes", "hypertension", "dyslipidemia", 
 data.outcomes <- data %>% select(pt, all_of(outcomes.all))
 
 lapply(outcomes.all, print_final_stats)
+
+write("Number of participants having a missing outcome: (which we should remove for an eligible dataset:")
+data.outcomes %>% filter_all(any_vars(is.na(.))) %>% nrow() %>% capture()
 
 st_write(data.outcomes, "../processed_data/f2_outcomes.gpkg", driver='GPKG', delete_layer=TRUE)
 
