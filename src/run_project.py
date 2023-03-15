@@ -4,6 +4,7 @@
 import subprocess
 import os
 
+# Commit for libraries : bf78b2d
 
 def main():
 
@@ -20,17 +21,17 @@ def main():
     execute_code(subdir_db, "create_materialized_views.sh", interpreter='sh')
     execute_code(subdir_db, "comment_tables.sh", interpreter='sh')
 
+    # Add residential information
+    execute_code(subdir_wrang, "assign_to_reli.py")
+    execute_code(subdir_wrang, "build_residential_history.py")
+
     # Define outcomes and covariates
     execute_code(subdir_descr, "describe_participants.R",
                  interpreter='Rscript')
     execute_code(subdir_wrang, "define_outcomes.R", interpreter='Rscript')
-    execute_code(subdir_db, "create_study_dataset.py")
-
-    # Assig to RELI and imputation of missing values
-    execute_code(subdir_wrang, "assign_to_reli.py")
+    # execute_code(subdir_db, "create_study_dataset.py")
 
     # add missing values handling
-    # add residential history - moved or not since last fw?
 
     # ESDA
 

@@ -17,11 +17,6 @@ capture <- function(result){
   capture.output(result, file=file_res, append=TRUE)
 }
 
-retrieve_dataset <- function(table_name, con){
-  query <- paste0("SELECT * FROM geochronic.", table_name,";")
-  table <- read_sf(con, query=query)
-}
-
 covariate_stats <- function(var, df){
 
   write(" ")
@@ -44,7 +39,6 @@ covariate_stats <- function(var, df){
 
 
 
-
 # Extract participants ----------------------------------------------------
 
 #Create file to store results
@@ -53,10 +47,10 @@ cat(paste0("Date:", Sys.Date(),'\n'), file = file_res, append = FALSE) #Overwrit
 
 con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",askForPassword(),dbname="geosan")
 
-indiv.b <- retrieve_dataset("b_geo_vaud", con)
+indiv.b <- read_sf(con, query="SELECT b.* FROM geochronic.colaus_b b, vd_canton vd WHERE NOT ST_IsEmpty(b.geometry) AND ST_Intersects(b.geometry, vd.geometry);")
 indiv.b <- indiv.b %>% mutate(datexam = as.Date(datexam))
 
-indiv.f2 <- retrieve_dataset("f2_geo_vaud", con) # including sex, age, etc. from colaus_baseline
+indiv.f2 <- read_sf(con, query="SELECT * FROM geochronic.f2_geo_vaud") # including sex, age, etc. from colaus_baseline
 indiv.f2  <- indiv.f2  %>% mutate(f2datexam = as.Date(f2datexam))
 
 # Define individual covariates --------------------------------------------
