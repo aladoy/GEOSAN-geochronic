@@ -234,7 +234,7 @@ write("\n--------------")
 write("SUMMARY")
 write("--------------")
 
-outcomes.all <- c("cvd", "obesity", "diabetes", "hypertension", "dyslipidemia", "morbidity", "multimorbidity", "polypharmacy")
+outcomes.all <- c("cvd", "diabetes", "hypertension", "obesity", "dyslipidemia", "morbidity", "multimorbidity", "polypharmacy")
 
 data.outcomes <- data %>% select(pt, all_of(outcomes.all))
 
