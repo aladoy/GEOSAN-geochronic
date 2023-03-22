@@ -46,6 +46,7 @@ file_res=paste0("../results/code_outputs/describe_participants.txt")
 cat(paste0("Date:", Sys.Date(),'\n'), file = file_res, append = FALSE) #Overwrite the file
 
 con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",askForPassword(),dbname="geosan")
+#con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",rstudioapi::askForPassword(),dbname="geosan")
 
 indiv.b <- read_sf(con, query="SELECT b.* FROM geochronic.colaus_b b, vd_canton vd WHERE NOT ST_IsEmpty(b.geometry) AND ST_Intersects(b.geometry, vd.geometry);")
 indiv.b <- indiv.b %>% mutate(datexam = as.Date(datexam))
@@ -81,8 +82,7 @@ indiv.f2 <- indiv.f2 %>% mutate(
   difficulties = if_else(f2income5 %in% c(0,1), 0, 1),
   smoking = f2sbsmk,
   alcohol = f2alcool2,
-  inactivity = f2seden,
-  bmi = f2bmi_cat2
+  inactivity = f2seden
 )
 
 
@@ -107,7 +107,7 @@ write("\n--------------")
 write("FOLLOW-UP 2")
 write("--------------")
 
-cov.f2 <- c("age", "sex", "swiss", "marital", "education", "difficulties", "smoking", "alcohol", "inactivity", "bmi")
+cov.f2 <- c("age", "sex", "swiss", "marital", "education", "difficulties", "smoking", "alcohol", "inactivity")
 indiv.f2 <- indiv.f2 %>% select(pt, f2datexam, all_of(cov.f2))
 
 write(paste("Number of individuals:", indiv.f2 %>% nrow()))
@@ -117,6 +117,7 @@ write(paste("Min / Max age:", min(indiv.f2$age), "/", max(indiv.f2$age)))
 lapply(cov.f2, covariate_stats, df=indiv.f2)
 
 # Save follow-up 2 individual covariates
+st_write(indiv.b, "../processed_data/b_indiv_covariates.gpkg", driver='GPKG', delete_layer=TRUE)
 st_write(indiv.f2, "../processed_data/f2_indiv_covariates.gpkg", driver='GPKG', delete_layer=TRUE)
 
 DBI::dbDisconnect(con)
