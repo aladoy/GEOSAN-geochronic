@@ -91,9 +91,6 @@ def main():
 
     # f3 = pd.read_csv(os.sep.join(
     #     [data_dir, "request_12dec22/Ladoy4.csv"]), delimiter=';')
-    # f3_na = f3[f3.F3datexam.isna() & f3.F3datquest.isna()].index
-    # if f3_na.size > 0:
-    #     f3 = remove_nan(f3, f3_na)
     # f3['F3datexam'] = f3.F3datexam.map(convert_date)
     # f3['F3datquest'] = f3.F3datquest.map(convert_date)
     # f3_geo = extract_geo_dataset(3)

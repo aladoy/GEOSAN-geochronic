@@ -7,6 +7,9 @@ source('/mnt/data/GEOSAN/FUNCTIONS/GIRAPH-functions/geosan_funcs/password_utils.
 
 setwd("/mnt/data/GEOSAN/RESEARCH PROJECTS/GEOCHRONIC @ LASIG (EPFL)/GEOSAN-geochronic/src/")
 
+#con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",askForPassword(),dbname="geosan")
+con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",rstudioapi::askForPassword(),dbname="geosan")
+
 # FUNCTIONS ---------------------------------------------------------------
 
 write <- function(text){
@@ -38,63 +41,26 @@ covariate_stats <- function(var, df){
 }
 
 
-
 # Extract participants ----------------------------------------------------
 
 #Create file to store results
 file_res=paste0("../results/code_outputs/describe_participants.txt")
 cat(paste0("Date:", Sys.Date(),'\n'), file = file_res, append = FALSE) #Overwrite the file
 
-con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",askForPassword(),dbname="geosan")
-#con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",rstudioapi::askForPassword(),dbname="geosan")
+indiv.b <- st_read("../processed_data/b_indiv_covariates.gpkg")
 
-indiv.b <- read_sf(con, query="SELECT b.* FROM geochronic.colaus_b b, vd_canton vd WHERE NOT ST_IsEmpty(b.geometry) AND ST_Intersects(b.geometry, vd.geometry);")
-indiv.b <- indiv.b %>% mutate(datexam = as.Date(datexam))
-
-indiv.f2 <- read_sf(con, query="SELECT * FROM geochronic.f2_geo_vaud") # including sex, age, etc. from colaus_baseline
-indiv.f2  <- indiv.f2  %>% mutate(f2datexam = as.Date(f2datexam))
-
-# Define individual covariates --------------------------------------------
-
-indiv.b <- indiv.b %>% mutate(
-  age = age,
-  sex = sex,
-  swiss = brnsws,
-  marital = mrtsts2,
-  education = edtyp4,
-  smoking = sbsmk,
-  alcohol = case_when(conso_hebdo == 0 ~0, 
-                      (conso_hebdo>=1 & conso_hebdo<=13) ~1, 
-                      (conso_hebdo>=14 & conso_hebdo<=34) ~2,
-                      conso_hebdo >= 35 ~3),
-  phyact = replace(phyact, phyact==9, NA),
-  inactivity = if_else(phyact == 0, 1, 0)
-)
-
-
-indiv.f2 <- indiv.f2 %>% mutate(
-  age = f2age,
-  sex = f2sex,
-  swiss = brnsws,
-  marital = f2mrtsts2,
-  education = edtyp4,
-  f2income5 = replace(f2income5, f2income5==9, NA),
-  difficulties = if_else(f2income5 %in% c(0,1), 0, 1),
-  smoking = f2sbsmk,
-  alcohol = f2alcool2,
-  inactivity = f2seden
-)
-
-
+indiv.f2 <- read_sf(con, query="SELECT * FROM geochronic.f2_study_dataset") # including sex, age, etc. from colaus_baseline
 
 # Characteristics of participants -----------------------------------------
+
+cov <- c("age", "sex", "swiss", "marital", "education", "difficulties", "smoking", "alcohol", "inactivity")
+cov.b <- cov[cov != "difficulties"]
 
 write("\n--------------")
 write("BASELINE")
 write("--------------")
 
-cov.b <- c("age", "sex", "swiss", "marital", "education", "smoking", "alcohol", "inactivity")
-indiv.b <- indiv.b %>% select(pt, datexam, all_of(cov.b))
+indiv.b <- indiv.b %>% select(pt, datexam, cov)
 
 write(paste("Number of individuals:", indiv.b %>% nrow()))
 write(paste("Time range:", min(indiv.b$datexam), "/", max(indiv.b$datexam)))
@@ -107,17 +73,12 @@ write("\n--------------")
 write("FOLLOW-UP 2")
 write("--------------")
 
-cov.f2 <- c("age", "sex", "swiss", "marital", "education", "difficulties", "smoking", "alcohol", "inactivity")
-indiv.f2 <- indiv.f2 %>% select(pt, f2datexam, all_of(cov.f2))
+indiv.f2 <- indiv.f2 %>% select(pt, f2datexam, cov)
 
 write(paste("Number of individuals:", indiv.f2 %>% nrow()))
 write(paste("Time range:", min(indiv.f2$f2datexam, na.rm=TRUE), "/", max(indiv.f2$f2datexam, na.rm=TRUE)))
 write(paste("Min / Max age:", min(indiv.f2$age), "/", max(indiv.f2$age)))
 
-lapply(cov.f2, covariate_stats, df=indiv.f2)
-
-# Save follow-up 2 individual covariates
-st_write(indiv.b, "../processed_data/b_indiv_covariates.gpkg", driver='GPKG', delete_layer=TRUE)
-st_write(indiv.f2, "../processed_data/f2_indiv_covariates.gpkg", driver='GPKG', delete_layer=TRUE)
+lapply(cov, covariate_stats, df=indiv.f2)
 
 DBI::dbDisconnect(con)

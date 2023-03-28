@@ -41,6 +41,8 @@ def main():
             ]
         ),
         driver="GPKG")
+    # Keep only participants that are in outcomes
+    covariates = covariates[covariates.pt.isin(outcomes.pt)]
 
     baseline = gpd.read_file(os.sep.join(
         [project_dir, "processed_data/b_indiv_covariates.gpkg", ]), driver="GPKG")
@@ -86,7 +88,7 @@ def main():
 
     # Gather all the information to create the study dataset
     full_df = merge_dfs(outcomes, res_info)
-    full_df = merge_dfs(full_df.drop('geometry', axis=1), imputed_cov)
+    full_df = merge_dfs(full_df, imputed_cov.drop('geometry', axis=1))
 
     # Convert & save
     full_gdf = gpd.GeoDataFrame(full_df, crs="EPSG:2056", geometry='geometry')

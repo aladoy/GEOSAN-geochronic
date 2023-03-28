@@ -6,7 +6,7 @@ HOSTNAME='localhost'
 
 psql -h $HOSTNAME -U $USERNAME $DATABASE << EOF
 
-DROP TABLE IF EXISTS geochronic.f2_geo_vaud;
+DROP TABLE IF EXISTS geochronic.f2_geo_vaud CASCADE;
 DROP MATERIALIZED VIEW IF EXISTS geochronic.cf2_laus_analysis;
 DROP MATERIALIZED VIEW IF EXISTS geochronic.covid_laus_analysis;
 DROP MATERIALIZED VIEW IF EXISTS geochronic.population_reli;

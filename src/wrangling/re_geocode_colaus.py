@@ -230,6 +230,20 @@ def extract_request_dataset(cohort_period):
     data_req = pd.read_csv(os.sep.join(
         [geosan_db_dir, "COLAUS/request_12dec22", filename]), delimiter=';')
 
+    if cohort_period == 0:
+        nas = data_req[data_req.datexam.isna(
+        ) & data_req.datarrival.isna()].index
+    elif cohort_period == 1:
+        nas = data_req[data_req.F1datexam.isna()].index
+    elif cohort_period == 2:
+        nas = data_req[data_req.F2datexam.isna(
+        ) & data_req.F2datquest.isna()].index
+
+    if nas.size > 0:
+        print(
+            'Number of NaN data (which are directly dropped from the dataset): ', nas.size)
+        data_req.drop(nas, inplace=True)
+
     return data_req
 
 
