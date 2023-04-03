@@ -10,6 +10,18 @@ DROP TABLE IF EXISTS geochronic.f2_geo_vaud CASCADE;
 DROP MATERIALIZED VIEW IF EXISTS geochronic.cf2_laus_analysis;
 DROP MATERIALIZED VIEW IF EXISTS geochronic.covid_laus_analysis;
 DROP MATERIALIZED VIEW IF EXISTS geochronic.population_reli;
+DROP MATERIALIZED VIEW IF EXISTS lausanne_sectors_extent;
+
+CREATE OR REPLACE FUNCTION sliver_killer(geometry,float) RETURNS geometry AS
+$$ SELECT ST_BuildArea(ST_Collect(a.geom)) as final_geom
+FROM ST_DumpRings($1) AS a
+WHERE a.path[1] = 0 OR
+(a.path[1] > 0 AND ST_Area(a.geom) > $2)
+$$
+LANGUAGE 'sql' IMMUTABLE;
+
+CREATE MATERIALIZED VIEW lausanne_sectors_extent AS 
+SELECT sliver_killer(l.geometry,50::float) as geometry FROM (SELECT ST_Union(geometry) as geometry FROM lausanne_sectors) l
 
 CREATE TABLE geochronic.f2_geo_vaud
 AS
