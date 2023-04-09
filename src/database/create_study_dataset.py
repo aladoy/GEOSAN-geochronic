@@ -78,8 +78,10 @@ def main():
     imputed_cov.isna().sum()
     imputed_cov.reset_index(drop=False, inplace=True)
 
-    cleaned_cov = drop_missing_val(imputed_cov, size, list(covariates)[2])
-    for cov in list(covariates)[3:-1]:
+    print('note: drop all missing cov except income (too many NaN)')
+    cleaned_cov = drop_missing_val(
+        imputed_cov, size, list(covariates)[2])
+    for cov in [x for x in list(covariates) if x != 'income'][3:-1]:
         cleaned_cov = drop_missing_val(cleaned_cov, size, cov)
     imputed_cov = imputed_cov[imputed_cov.pt.isin(cleaned_cov.pt)]
 

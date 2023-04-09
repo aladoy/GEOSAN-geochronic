@@ -19,7 +19,7 @@ cat(paste0("Date:", Sys.Date(),'\n'), file = file_res, append = FALSE) #Overwrit
 indiv.b <- read_sf(con, query="SELECT * FROM geochronic.colaus_b")
 indiv.b <- indiv.b %>% mutate(datexam = as.Date(datexam))
 
-indiv.f2 <- read_sf(con, query="SELECT * FROM geochronic.colaus_f2 f2 INNER JOIN  (SELECT pt, brnsws, datarrival, bthpl_dem, ethori_self, lvplyr, edtyp3, edtyp4, mrtsts2, cvdbase, cvdbase_adj FROM  geochronic.colaus_b) b USING (pt)") # including sex, age, etc. from colaus_baseline
+indiv.f2 <- read_sf(con, query="SELECT * FROM geochronic.colaus_f2 f2 INNER JOIN  (SELECT pt, brnsws, datarrival, bthpl_dem, ethori_self, lvplyr, edtyp3, edtyp4, mrtsts2, cvdbase, cvdbase_adj FROM  geochronic.colaus_b) b USING (pt)") # including man, age, etc. from colaus_baseline
 indiv.f2  <- indiv.f2  %>% mutate(f2datexam = as.Date(f2datexam))
 
 # Define individual covariates --------------------------------------------
@@ -28,13 +28,11 @@ indiv.b <- indiv.b %>% mutate(
   age = age,
   sex = sex,
   swiss = brnsws,
-  marital = mrtsts2,
-  education = edtyp4,
-  smoking = sbsmk,
-  alcohol = case_when(conso_hebdo == 0 ~0, 
-                      (conso_hebdo>=1 & conso_hebdo<=13) ~1, 
-                      (conso_hebdo>=14 & conso_hebdo<=34) ~2,
-                      conso_hebdo >= 35 ~3),
+  cohabiting = mrtsts2,
+  education = edtyp3,
+  working = if_else(job_curr8 %in% c(1,2,3), 1, 0),
+  smoking = if_else(sbsmk %in% c(0,1), 0, 1),
+  drinking = if_else(conso_hebdo < 14, 0, 1),
   phyact = replace(phyact, phyact==9, NA),
   inactivity = if_else(phyact == 0, 1, 0)
 )
@@ -44,20 +42,22 @@ indiv.f2 <- indiv.f2 %>% mutate(
   age = f2age,
   sex = f2sex,
   swiss = brnsws,
-  marital = f2mrtsts2,
-  education = edtyp4,
+  cohabiting = f2mrtsts2,
+  education = edtyp3,
+  working = f2job_curr1,
+  income = replace(f2income1, f2income1 %in% c(8,9), NA),
   f2income5 = replace(f2income5, f2income5==9, NA),
   difficulties = if_else(f2income5 %in% c(0,1), 0, 1),
-  smoking = f2sbsmk,
-  alcohol = f2alcool2,
+  smoking = if_else(f2sbsmk %in% c(0,1), 0, 1),
+  drinking = if_else(f2alcool2 %in% c(0,1), 0, 1),
   inactivity = f2seden
 )
 
 
-cov.b <- c("age", "sex", "swiss", "marital", "education", "smoking", "alcohol", "inactivity")
+cov.b <- c("age", "sex", "swiss", "cohabiting", "education", "working", "smoking", "drinking", "inactivity")
 indiv.b <- indiv.b %>% select(pt, datexam, all_of(cov.b))
 
-cov.f2 <- c("age", "sex", "swiss", "marital", "education", "difficulties", "smoking", "alcohol", "inactivity")
+cov.f2 <- c("age", "sex", "swiss", "cohabiting", "education", "working", "income", "difficulties", "smoking", "drinking", "inactivity")
 indiv.f2 <- indiv.f2 %>% select(pt, f2datexam, all_of(cov.f2))
 
 # Save follow-up 2 individual covariates
