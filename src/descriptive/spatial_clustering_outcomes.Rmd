@@ -1,0 +1,260 @@
+---
+title: "ESDA - Chronic diseases"
+author: "Anaïs Ladoy"
+date: '2023-04-04'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "/mnt/data/GEOSAN/RESEARCH PROJECTS/GEOCHRONIC @ LASIG (EPFL)/GEOSAN-geochronic/src")
+```
+
+```{r, include=FALSE}
+library(tidyverse)
+library(sf)
+source('/mnt/data/GEOSAN/FUNCTIONS/GIRAPH-functions/geosan_funcs/password_utils.R')
+source('descriptive/utils_spatial_clustering_outcomes.R')
+```
+
+
+```{r, include=FALSE}
+con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",rstudioapi::askForPassword(),dbname="geosan")
+```
+
+
+**Import the datasets**
+
+- `indiv`: Subset of Colaus participants eligible for this study (see selection procedure) within Lausanne.
+- `laus$extent`: Boundary of the Lausanne area (polygon).
+- `laus$sectors`: Statistical sectors of Lausanne (for mapping purpose only).
+- `env`: Living environment (hectares) characteristics.
+
+```{r}
+indiv <- load_participants(con)
+laus <- load_boundaries(con)
+env <- load_env()
+```
+
+
+***Specify covariates***
+
+```{r}
+cov.indiv <- c("age", "sex", "swiss", "cohabiting", "education", "difficulties", "smoking", "drinking", "inactivity")
+
+cov.env <- c("PTOT", "ENV_INDEX", "NO2", "PM25", "NOISE", "GREEN_SP", "D_SPORT", "N_ACC_PED", "SOC_ECO_INDEX", "UNEMPLOYMENT", "LOW_EDUC", "HH_1PERS", "INCOME")
+```
+
+
+
+# Diabetes
+
+```{r}
+diab.data <- select_outcome(indiv, "diabetes", cov=cov.indiv)
+```
+
+Visualize diabetes events
+
+```{r, echo=FALSE}
+plot_case_control(diab.data, window=laus$extent, title='Diabetes')
+```
+
+```{r, include=FALSE}
+diab.events <- create_ppp(diab.data, laus$extent, marks=diab.data$outcome, title="Diabetes - events")
+diab.cases <- create_ppp(diab.data %>% filter(outcome=='case'), laus$extent, title="Diabetes - cases")
+diab.controls <- create_ppp(diab.data %>% filter(outcome=='control'), laus$extent, title="Diabetes - controls")
+```
+
+**Explore the spatial density of diabetes.**
+```{r}
+compare_spatial_dens(diab.cases, diab.controls)
+```
+
+To construct the spatial density of diabetes, we used a two-dimensional product kernels using a Gaussian function and a bandwith defined by the Scott's rule (*see p.133-136, Waller and Gotway (2004) for more details*). We applied an edge correction using the Jones-Diggle formula.
+The density function estimates suggest some local differences in the case and control patterns, especially near Montelly & Pontaise (high density of cases) and Chailly (high density of controls).
+
+**Log ratio of spatial densities.**  
+
+Detect local clusters (*see p.164-171, Waller and Gotway (2004) for more details*).
+"Do cases and controls tend to occur in the same locations?"
+Assumption: bot case and control locations each represent a realization of a heterogeneous Poisson point process over the study area.
+We obtain a map indicating areas where events appear more or less likely to be cases than controls.
+Bandwith: We choosed a bandwith of 350m which is a compromise between the Scott's rule estimated bandwith for cases and controls separatly.
+
+```{r}
+diab.lrr <- log_ratio_spatial_dens(diab.events, sigma=350)
+```
+
+In the last map, orange areas represent parts of the study area where cases are clustered relative to controls beyond what is expected according to the random labeling hypothesis (tolerance=0.9, nsim=999).
+For the diabetes in Lausanne, we confirm our suggestions that there are clusters of cases near Montelly and Pontaise, and a deficit of cases near Chailly.
+However, there is no evidence of global clustering (p=0.425).
+
+**Difference between K-functions of case and control processes.**  
+
+Using K-functions, we are interested of the distance to which any observed clustering tends to occur, averaged over the entire study area.
+"Do cases tend to occur near other cases in the same manner that controls tend to occur near other controls?"
+
+```{r}
+k_func_diff(diab.events)
+```
+
+
+### Extract areas of significant higher and lower risks of diabetes
+
+Polygonize the image of the log relative risk surface.
+```{r, include=FALSE}
+diab.incid <- polygonize_logrr(diab.lrr, env)
+```
+
+```{r}
+map_significant_areas(diab.incid$lrr.poly, laus$sectors)
+```
+
+
+Compare neighborhood characteristics between areas of reduced and higher risk of diabetes.
+```{r}
+compare_risk_areas(diab.incid$lrr.ha, cov.env)
+```
+
+```{r}
+compare_risk_groups(diab.incid$lrr.ha, cov.env)
+```
+
+**Summary**
+
+While there is no evidence of global clustering of diabetes in Lausanne, we detected areas of significantly higher and lower risk.  
+
+*Areas of higher risk:*  
+
+- Montoie / Provence / Sébeillon
+- Bossons / Bois-Mermet
+- Bourdonnette
+
+*Areas of lower risk:*    
+
+- Bellerive
+- Victor-Ruffy / Sallaz / Devin / Craivavers / Av. Secrétan
+
+*Areas of higher risk are characterized by:*    
+
+- higher population density (p<0.001)
+- higher environmental exposures such as road noise and air pollution (p<0.001)
+- lower greenspace (p<0.001)
+- increased access to sport facility (p<0.001)
+- lower neighborhood safety - higher pedestrian accidents (p<0.001) 
+- higher socio-economic vulnerability (p=0.001)
+- higher unemployment rate (p<0.001)
+- higher rate of low education (p<0.001)
+- lower income (p<0.001)
+
+
+# Morbidity
+
+
+```{r}
+morbi.data <- select_outcome(indiv, "morbidity", cov=cov.indiv)
+```
+
+```{r, echo=FALSE}
+plot_case_control(morbi.data, window=laus$extent, title='Morbidity')
+```
+
+```{r, include=FALSE}
+morbi.events <- create_ppp(morbi.data, laus$extent, marks=morbi.data$outcome, title="Morbidity - events")
+morbi.cases <- create_ppp(morbi.data %>% filter(outcome=='case'), laus$extent, title="Morbidity - cases")
+morbi.controls <- create_ppp(morbi.data %>% filter(outcome=='control'), laus$extent, title="Morbidity - controls")
+```
+
+```{r}
+compare_spatial_dens(morbi.cases, morbi.controls)
+```
+```{r}
+morbi.lrr <- log_ratio_spatial_dens(morbi.events, sigma=300)
+```
+
+```{r}
+k_func_diff(morbi.events)
+```
+
+```{r}
+morbi.incid <- polygonize_logrr(morbi.lrr, env)
+map_significant_areas(morbi.incid$lrr.poly, laus$sectors)
+```
+
+```{r}
+compare_risk_areas(morbi.incid$lrr.ha, cov.env)
+```
+```{r}
+compare_risk_groups(morbi.incid$lrr.ha, cov.env)
+```
+
+**Summary**
+
+While there is no evidence of global clustering of diabetes in Lausanne, we detected areas of significantly higher and lower risk.  
+
+*Areas of higher risk:*  
+
+- Malley / Montoie / Provence / Sébeillon
+- Bossons / Bois-Mermet / Ancien-Stand / Bellevaux/ Sauvabelin
+- Chailly / Victor-Ruffy
+
+*Areas of lower risk:*    
+
+- Mont-Repos / Béthusy / Av. Sécrétan
+- Riponne / Chauderon / Flon / Montbenon / Tivoli / Marc-Dufour / Cour / Milan / Bellerive
+
+*Areas of higher risk are characterized by:*    
+
+- higher population density (p<0.001)
+- higher environmental exposures (p<0.001) but if we look at the exposures separately, we observe significant differences in air pollutants - NO2 (p<0.001) and PM2.5 (p<0.001) but no differences in road noise (p=0.3).
+- higher greenspace (p<0.001)
+- lower access to sport facility (p<0.001)
+- higher neighborhood safety - lower pedestrian accidents (p<0.001) 
+- higher socio-economic vulnerability (p<0.001)
+- higher unemployment rate (p<0.001)
+- higher rate of low education (p<0.001)
+- lower income (p<0.001)
+
+Compared to diabetes, areas of higher risk of morbidity (all causes) do not cumulate socio-economic and environmental exposures. Lower risk areas correspond to highly urbanized neighborhood (higher pedestrian accidents, lower greenspace, higher air pollution) but are still of lower population density and lower socio-economic vulnerability than high-risk areas.
+
+
+# Multimorbidity
+
+```{r}
+multimorbi.data <- select_outcome(indiv, "multimorbidity", cov=cov.indiv)
+```
+
+```{r}
+plot_case_control(multimorbi.data, window=laus$extent, title='Multimorbidity')
+```
+
+
+```{r, include=FALSE}
+multimorbi.events <- create_ppp(multimorbi.data, laus$extent, marks=multimorbi.data$outcome, title="Multimorbidity - events")
+multimorbi.cases <- create_ppp(multimorbi.data %>% filter(outcome=='case'), laus$extent, title="Multimorbidity - cases")
+multimorbi.controls <- create_ppp(multimorbi.data %>% filter(outcome=='control'), laus$extent, title="Multimorbidity - controls")
+```
+
+```{r}
+compare_spatial_dens(multimorbi.cases, multimorbi.controls)
+```
+```{r}
+multimorbi.lrr <- log_ratio_spatial_dens(multimorbi.events, sigma=300)
+```
+
+```{r}
+k_func_diff(multimorbi.events)
+```
+
+```{r}
+multimorbi.incid <- polygonize_logrr(multimorbi.lrr, env)
+map_significant_areas(multimorbi.incid$lrr.poly, laus$sectors)
+```
+
+```{r}
+compare_risk_areas(multimorbi.incid$lrr.ha, cov.env)
+```
+```{r}
+compare_risk_groups(multimorbi.incid$lrr.ha, cov.env)
+```
+
