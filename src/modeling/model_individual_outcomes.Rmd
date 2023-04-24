@@ -12,21 +12,17 @@ knitr::opts_knit$set(root.dir = "/mnt/data/GEOSAN/RESEARCH PROJECTS/GEOCHRONIC @
 
 ```{r, include=FALSE}
 library(stats)
-library(tmap)
-library(leaflet)
 library(lme4)
 require(RPostgreSQL)
 library(MASS)
 library(MapGAM)
 library(pROC)
-library(corrplot)
 library(mgcv)
 library(gam)
-library(caret)
 library(jtools)
 library(PrevMap)
 source('/mnt/data/GEOSAN/FUNCTIONS/GIRAPH-functions/geosan_funcs/password_utils.R')
-source('descriptive/esda_utils.R')
+source('modeling/utils_model_individual_outcomes.R')
 ```
 
 ```{r, include=FALSE}
@@ -36,9 +32,11 @@ con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy"
 ### Import the datasets
 
 - `data`: All F2 Colaus participants eligible for this study (see selection procedure).
+- `env`: Neighborhood characteristics build in **explore_neighborhood_characteristics.Rmd**
 
 ```{r, include=FALSE}
 data <- load_participants(con)
+data <- add_env_info(data)
 ```
 
 - `boundary.laus`: Boundary of the Lausanne area (polygon)
@@ -48,12 +46,6 @@ data <- load_participants(con)
 extent <- load_boundaries(con)
 ```
 
-- `env`: Neighborhood characteristics build in **explore_neighborhood_characteristics.Rmd**
-
-```{r, include=FALSE}
-env.sf <- read_sf("../processed_data/neighborhood_vd.gpkg")
-```
-
 - `predict.grid`: Prediction grid for Vaud state (inhabited hectares only)
 
 ```{r, include=FALSE}
@@ -61,77 +53,46 @@ grid.sf <- read_sf(con, query="SELECT * FROM vd_reli_centroid")
 ```
 
 
-### Data Wrangling
-
-
-<!-- Create a measure of neighborhood environmental exposure and deprivation by converting ENV_INDEX and SOC_ECO_INDEX to quintiles (n=5). -->
-<!-- ```{r, include=FALSE} -->
-<!-- env.sf <- env.sf %>% mutate(env_depriv = factor(ntile(env_index, 5)), soceco_depriv = factor(ntile(soc_eco_index, 5)), ptot_quint = factor(ntile(ptot, 5))) -->
-<!-- ``` -->
-
-Merge data with environmental covariates
-```{r}
-data <- left_join(data, env.sf %>% st_drop_geometry(), by="reli")
-paste("Number of participants removed because no covariate data for corresponding RELI: ", data %>% filter(is.na(D_SPORT)) %>% nrow())
-data <- data %>% filter(!is.na(D_SPORT))
-```
-
-<!-- ```{r} -->
-<!-- tmap_mode("view") -->
-<!-- tm_shape(env.sf) + -->
-<!--   tm_polygons("env_depriv", palette = "YlOrRd", alpha=0.8, title="Quintiles") + -->
-<!--   tm_layout(title="Neihgborhood environmental vulnerability in Lausanne") -->
-<!-- tm_shape(env.sf) + -->
-<!--   tm_polygons("soceco_depriv", palette = "YlOrRd", alpha=0.8, title="Quintiles") + -->
-<!--   tm_layout(title="Neihgborhood socio-economic deprivation in Lausanne") -->
-<!-- tm_shape(env.sf) + -->
-<!--   tm_polygons("ptot_quint", palette = "YlOrRd", alpha=0.8, title="Quintiles") + -->
-<!--   tm_layout(title="Neihgborhood population density in Lausanne") -->
-<!-- ``` -->
-
-
 ```{r}
 cov.indiv <- c("age", "sex", "swiss", "cohabiting", "education", "working", "difficulties", "smoking", "drinking", "inactivity", "moved")
-# cov.env <- c("ptot", "d_sport", "d_swim", "n_acc_ped", "pm25", "noise")
-cov.env <- c("PTOT", "D_SPORT", "N_ACC_PED", "GREEN_SP", "ENV_INDEX", "SOC_ECO_INDEX", "SWISS", "UNEMPLOYMENT", "LOW_EDUC", "INCOME", "HH_1PERS", "F_45_54", "F_55_64", "F_65_74", "F_75_MORE", "M_45_54", "M_55_64", "M_65_74", "M_75_MORE")
+
+cov.env <- c("PTOT", "D_SPORT", "N_ACC_PED", "GREEN_SP", "ENV_INDEX", "SOC_ECO_INDEX", "SWISS", "UNEMPLOYMENT", "LOW_EDUC", "INCOME", "HH_1PERS")
+
+cov.continuous <- c("age", cov.env)
+# "F_45_54", "F_55_64", "F_65_74", "F_75_MORE", "M_45_54", "M_55_64", "M_65_74", "M_75_MORE"
 ```
 
 I removed HIGH_EDUC because highly correlated with LOW_EDUC in the model but the spatial pattern is different (see spatial_clustering_outcomes). Should I include both?
 Same for poverty and income. Easier to predict with a binary variable but we loose some granularity and both are correlated. What should we keep in the model? For now, I kept income.
 
-### Diabetes
+# Diabetes
 
-Convert binary / categorical variables
 ```{r}
-diab.data <- data %>% 
-  mutate_at(cov.indiv[! cov.indiv == "age"], as.factor) %>% 
-  mutate(POVERTY = factor(POVERTY)) %>%
-  mutate(diabetes = factor(diabetes, levels = c("0", "1"))) %>%
-  dplyr::select(pt, diabetes, all_of(cov.indiv), coordx, coordy, all_of(cov.env), reli)
-```
-
-Split dataset (train + test)
-```{r}
-diab.dt <- create_train_dataset(diab.data, frac=0.8, seed=NULL)
-diab.train <- diab.dt$train
-diab.test <- diab.dt$test
+diab.data <- select_outcome(data, "diabetes", cov.indiv, cov.env)
 ```
 
 Distribution of age and neighborhood-related characteristics between cases and controls.
 ```{r}
-diab.data.long <- diab.data %>% dplyr::select(c(diabetes, age, cov.env[! cov.env == "POVERTY"])) %>% gather(key = "Variable", value = "Value", -diabetes)
-
-ggplot(diab.data.long, aes(x = Value, y = diabetes)) +
-  geom_violin() +
-  labs(x="", y="Diabetes") + 
-  facet_wrap(~ Variable, scales = "free_x") 
+plot_cov_distribution(diab.data, "diabetes", cov.continuous)
 ```
 
+Split dataset (train + test)
+```{r}
+diab.subset <- create_train_dataset(diab.data, frac=0.8, seed=12345)
+```
+
+
+
+### 1. Investigate the individual-level covariates using a logistic regression
+
+
+**Generalized Linear Model using the train dataset (80%)**
 
 ```{r}
-m.univ <- glm(diabetes ~ sex, data=diab.data, family='binomial')
+m.univ <- glm(diabetes ~ sex, data=diab.subset$train, family='binomial')
 print_model_summary(m.univ)
 ```
+
 - `Deviance residuals`: should be centered around 0 and symmetrical. 
 - `Coefficients`: give the log-odds estimates. Effect size.
 - `Dispersion parameter`: since the variance is derived from the estimated mean (compared to the linear regression where we estimate both the mean and the variance from the data), it can be underestimated and we can adjust this by adjusting the dispersion parameter.
@@ -139,133 +100,112 @@ print_model_summary(m.univ)
 - `AIC`: Akaike Information Criterion, which is here the residual deviance adjusted for the number of parameters in the model. Can be used to compare models.
 - `Fisher Scoring Iterations`: how quickly the glm() function converged on the maximum likelihood estimates for the coefficients.
 
-**Compare models:** Better model will have lower residual deviance and lower AIC.
+*Compare models:* Better model will have lower residual deviance and lower AIC.  
+*Specification error*: we must particularly check here if our model has all relevant predictors, and if the linear combinations of them is sufficient.
+
 
 ```{r, fig.width=3,fig.height=2}
 paste("The probability that a man has diabetes is", inverse_logit(m.univ$coefficients[[1]]))
 paste("The probability that a woman has diabetes is", inverse_logit(m.univ$coefficients[[1]] + m.univ$coefficients[[2]]))
 paste("Women are", round(1/exp(m.univ$coefficients[[2]]),2), "less likely to have diabetes than a man.")
 mcfadden(m.univ)
-draw_predicted_prob(m.univ, diab.data, "diabetes")
 ```
 
-**Specification error**: we must particularly check here if our model has all relevant predictors, and if the linear combinations of them is sufficient.
+**Investigate individual-level covariates using a backward stepwise logistic regression.**
 
-
-Investigate individual-level covariates using a backward stepwise logistic regression.
 ```{r}
-diab.indiv.dat <- diab.data %>% dplyr::select(diabetes, all_of(cov.indiv))
-glm.indiv <- glm(diabetes ~ ., data=diab.indiv.dat, family=binomial()) %>% 
-  stepAIC(direction = "backward")
-print_model_summary(glm.indiv)
+glm.indiv <- stepwise_logistic_regression(diab.subset$train, "diabetes", cov.indiv, trace=0)
 ```
 
-Test if we should model age as non-linear to diabetes (with cubic spline)
+**Test if we should model age as non-linear to diabetes (with cubic spline)**
+
 ```{r}
-gam.indiv <- mgcv::gam(diabetes ~ s(age, bs="cr") + sex + swiss + education + working + difficulties + smoking + inactivity, method = "GCV.Cp", data=diab.data, family="binomial")
-summary(gam.indiv)
+gam.indiv <- mgcv::gam(diabetes ~ s(age, bs="cr") + sex + swiss + education + working + difficulties + smoking + inactivity, method = "GCV.Cp", data=diab.subset$train, family="binomial")
+print_model_summary(gam.indiv, type="gam")
 ```
+
 ```{r}
 compare_models(glm.indiv, gam.indiv)
 ```
-Plot the cubic splines used to model the diabetes-age relationship
-```{r, fig.width=3,fig.height=2}
+
+Model age with a non-linear function significantly improved the model with individual covariates only.
+
+**Plot the cubic splines used to model the diabetes-age relationship**
+
+```{r}
 plot(gam.indiv, cex.lab=0.8, cex.axis=0.8)
 ```
 
+
+**Try a reduced form by removing individual covariates that were not significant**
+
 ```{r}
-gam.indiv.final <- mgcv::gam(diabetes ~ s(age, bs="cr") + sex  + education + difficulties  + smoking + inactivity, method = "GCV.Cp", data=diab.data, family="binomial")
-summary(gam.indiv.final)
-```
-```{r}
-compare_models(gam.indiv, gam.indiv.final)
+gam.indiv.reduced <- update(gam.indiv, diabetes ~ . - working, method = "GCV.Cp", data=diab.subset$train, family="binomial")
+print_model_summary(gam.indiv.reduced, type="gam")
 ```
 
+
+```{r}
+compare_models(gam.indiv, gam.indiv.reduced)
+```
 
 There are no significant differences between the GAM with all individual covariates selected from the backward stepwise regression, including a cubic-spline relationship between age and diabetes (gam.indiv), and the model with a reduced number of covariates (removing the ones where p-value > 0.05). Therefore, we keep the reduced version (gam.indiv.reduced).
--> there is a significant difference actually. Should we then preserved the full model returned by the stepwise regression even if some covariates are not significant?
+In other way, working seems important as it was initially significant in the GLM model. We decide to keep it for now.
+<!-- -> there is a significant difference actually. Should we then preserved the full model returned by the stepwise regression even if some covariates are not significant? -->
 
+**Select the best model for individual-covariates only**
 
-### Assess the impact of the environment at the individual level
-
-With socio-eco / environment and demographic characteristics
 ```{r}
-glm.env.all <- glm(diabetes ~ ., data=diab.data %>% dplyr::select(diabetes, all_of(cov.env)), family=binomial()) %>% 
-  stepAIC(direction = "backward", trace=0)
-print_model_summary(glm.env.all)
+m.indiv <- gam.indiv
+diab.cov.indiv <- c("age", "sex", "swiss", "education", "working", "difficulties", "smoking", "inactivity")
 ```
+
+
+
+### 2.Assess the impact of the environment at the individual level
 
 
 With socio-eco / environment and without demographic characteristics
 ```{r}
-glm.env.nodemo <- update(glm.env.all, ~ . - F_45_54 - F_55_64 - F_65_74 - F_75_MORE - M_45_54 - M_55_64 - M_65_74 - M_75_MORE )
-print_model_summary(glm.env.nodemo)
-```
-
-Significant environmental variables only
-```{r}
-glm.env.final <- glm(diabetes ~  SOC_ECO_INDEX + LOW_EDUC + INCOME , data=diab.data, family=binomial())
-print_model_summary(glm.env.final)
+glm.env <- stepwise_logistic_regression(diab.subset$train, "diabetes", c(diab.cov.indiv, cov.env), trace=0)
 ```
 
 ```{r}
-compare_models(glm.env.nodemo, glm.env.final)
+gam.env <- update(m.indiv, "~ . + GREEN_SP + UNEMPLOYMENT + LOW_EDUC + INCOME")
+print_model_summary(gam.env, type="gam")
+```
+
+```{r}
+compare_models(glm.env, gam.env)
 ```
 
 
-
-### Incorporate spatial effects
+### 3. Incorporate spatial effects
 
 Try an empty 2-levels regression model. 
 Determine to what extent do the log-odds vary between clusters using the intraclass correlation coefficient (ICC). The ICC quantifies the degree of homogeneity of the outcome within clusters, and represents the proportion of the between-cluster variation in the total variation.
-```{r}
-multilevel.empty <- glmer(diabetes ~ (1 | reli), data=diab.data, family=binomial("logit"))
-summary(multilevel.empty)
-icc <- multilevel.empty@theta[1]^2/ (multilevel.empty@theta[1]^2 + (3.14159^2/3))
-icc
-```
-
-<!-- ```{r} -->
-<!-- ggplot(diab.data, aes(ptot, env_index)) +  -->
-<!--   geom_point() + -->
-<!--   geom_smooth() -->
-<!-- ggplot(diab.data, aes(ptot, soc_eco_index)) +  -->
-<!--   geom_point() + -->
-<!--   geom_smooth() -->
-<!-- ``` -->
-
-
-Incorporate neighborhood-level variables without hierarchical modeling.
-```{r}
-gam.spat.complete <- update(gam.indiv, ~ . + SOC_ECO_INDEX + LOW_EDUC + INCOME)
-summary(gam.spat.complete)
-exp(coef(gam.spat.complete))
-```
 
 ```{r}
-gam.spat.final <- update(gam.spat.complete, ~ . - INCOME - LOW_EDUC)
-summary(gam.spat.final)
-exp(coef(gam.spat.final))
+m <- empty_multilevel(data, "diabetes", "reli")
 ```
-
-
-For the same individual-level covariates, individuals living in poorer SEP are 11 times more likely to have diabetes. -> the odds-ratio seem particularly huge (?).
-
-```{r}
-compare_models(gam.indiv.final, gam.spat.final)
-```
+The variance and standard deviation of the random intercept for the grouping variable "reli" is close to 0. Therefore, it indicates very little variability between groups, and that the group-level interecepts is almost identical.
 
 
 Generalized Additive Model (GAM) with a two-dimensional LOESS smooth.
 ```{r}
-gam.loess <- update(gam.spat.final, ~ . + lo(coordx, coordy, span=0.3))
+gam.loess <- update(gam.env, ~ . + lo(coordx, coordy, span=0.3))
 summary(gam.loess)
 ```
 
 ```{r}
-compare_models(gam.spat.final, gam.loess)
+compare_models(gam.env, gam.loess)
 ```
 Adding a LOESS spatial smoother does not improve significantly the model. We therefore keep the previous model.
+
+```{r}
+m.final <- gam.env
+```
+
 
 <!-- ```{r} -->
 <!-- a <- data.frame(pred_prob = inverse_logit(predict.gam(gam.spat.final, diab.data, type='response')), observed=diab.data$diabetes) -->
@@ -280,31 +220,32 @@ Adding a LOESS spatial smoother does not improve significantly the model. We the
 <!-- ``` -->
 
 
-
 ```{r, fig.width=5,fig.height=3}
-draw_predicted_prob(gam.spat.final, diab.data, "diabetes")
+draw_predicted_prob(m.final, diab.subset$train, "diabetes")
 ```
-
 
 
 Assess model accuracy by comparing predicted outcome at test locations (20% of the dataset).
 ```{r}
-pred.indiv <- predict(m.indiv, newdata=test, type="response")
-confusionMatrix(factor(as.numeric(pred.indiv>0.5)), test$diabetes)
-```
-
-```{r}
-roc_curve <- roc(test$diabetes, pred.indiv)
-plot(roc_curve)
-auc(roc_curve)
+cross_validation(m.final, diab.subset$test, "diabetes", 0.3)
 ```
 
 
+- `Accuracy`: proportion of correct predictions out of all predictions made. 
+- `Kappa`: agreement between predicted and actual values, adjusted for chance. The coefficient ranges from -1 to 1, with 1 indicating perfect agreement and 0 indicating agreement due to change.
+- `Sensitivity`: proportion of true positives out of all actual positives (Positives are defined based on the "Positive class" specified at the bottom of the summary).
+- `Specificity`: proportion of true negatives out of all actual negatives.
 
-```{r}
-effect_plot(m, pred = age, plot.points = TRUE,
-            jitter = c(0.1, 0.05), point.alpha = 0.1) +
-  ylab("Pr(SmokeNow = Yes)")
-```
+For the model for diabetes, we obtain a high accuracy (89.2%) but we have a low sensitivity and a low Kappa coefficients. We can only identified 12% of the actual positive cases.
+
+
+
+<!-- # roc_curve <- roc(test$diabetes, pred.indiv) -->
+<!-- # plot(roc_curve) -->
+<!-- # auc(roc_curve) -->
+<!-- # effect_plot(m, pred = age, plot.points = TRUE, -->
+<!-- #             jitter = c(0.1, 0.05), point.alpha = 0.1) + -->
+<!-- #   ylab("Pr(SmokeNow = Yes)") -->
+
 
 
