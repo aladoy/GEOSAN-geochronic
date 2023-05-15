@@ -104,6 +104,7 @@ def main():
     # db.import_data('geosan', 'aladoy', f3, 'colaus_f3', pk='NULL',
     #                schema='geochronic', idx_geom=True, ifexists='replace')
 
+    conn.close()
     sys.stdout.close()
 
 

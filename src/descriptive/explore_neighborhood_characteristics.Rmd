@@ -21,7 +21,7 @@ library(rgeoda)
 library(sf)
 library(tidyverse)
 source('/mnt/data/GEOSAN/FUNCTIONS/GIRAPH-functions/geosan_funcs/password_utils.R')
-source('descriptive/esda_utils.R')
+source('descriptive/utils_explore_neighborhood_characteristics.R')
 ```
 
 
@@ -44,7 +44,7 @@ boundary.vd <- read_sf(con, query="SELECT * FROM vd_canton")
 - `env`: Indicators from Commune-en-Santé project
 
 ```{r, include=FALSE}
-env.sf <- read_sf(con, query="SELECT reli, ptot, d_sport, d_forest, d_lake, d_swim, n_acc_ped, n_acc_bic, green_sp, blue_sp, pm25, no2, noise, env_index, soc_eco_index, healthcare_index, geometry FROM ha_indicators")
+env.sf <- read_sf(con, query="SELECT reli, ptot, d_sport, d_forest, d_lake, d_swim, n_acc_ped, n_acc_bic, green_sp, blue_sp, pm25, no2, noise, env_index, soc_eco_index, healthcare_index, rp65m, r_pla, medrev, r_div_wid, r_ffb, r_nn_fra, r_nn_pobl, r_dis, r_unemp, geometry FROM ha_indicators")
 ```
 
 - `socdemo`: Indicators from MicroGIS that will be used as proxy of individual-level covariates
@@ -84,7 +84,7 @@ socdemo <- socdemo %>% mutate(
 Select environmental variables
 ```{r}
 env.sf <- env.sf %>% 
-  select(reli, ptot, d_sport, n_acc_ped, green_sp, pm25, no2, noise, env_index, soc_eco_index) %>% 
+  # select(reli, ptot, d_sport, n_acc_ped, green_sp, pm25, no2, noise, env_index, soc_eco_index) %>% 
   rename_at(vars(-reli, -geometry), toupper)
 ```
 

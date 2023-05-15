@@ -26,6 +26,9 @@ def main():
     # execute_code(subdir_wrang, "assign_to_reli.py")
     # execute_code(subdir_wrang, "build_residential_history.py")
 
+    # Define neighborhood (ha) characteristics
+    execute_code(subdir_wrang, "build_ha_characteristics.py")
+
     # Define outcomes and covariates
     execute_code(subdir_wrang, "define_outcomes.R", interpreter='Rscript')
     execute_code(subdir_wrang, "define_indiv_covariates.R",

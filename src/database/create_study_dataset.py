@@ -18,9 +18,15 @@ project_dir: str = r"/mnt/data/GEOSAN/RESEARCH PROJECTS/GEOCHRONIC @ LASIG (EPFL
 
 def main():
 
+    create_study_dataset("vaud")
+    create_study_dataset("lausanne")
+
+
+def create_study_dataset(extent="vaud"):
+
     # REDIRECT STDOUT INTO TEXT FILE
     output_print_file = os.sep.join(
-        [project_dir, "results", "code_outputs/create_study_dataset.txt"]
+        [project_dir, "results", "code_outputs/create_study_dataset_"+extent+".txt"]
     )
     sys.stdout = open(output_print_file, "w")
 
@@ -49,12 +55,24 @@ def main():
 
     # Add other residential attributes
     engine, conn, cursor = db.connect_db("geosan", "aladoy")
-    res_info = pd.read_sql(
-        "SELECT pt, has_moved_dist, reli FROM geochronic.f2_geo_vaud", conn)
 
     # Extract initial size of F2 dataset
     cursor.execute("SELECT COUNT(*) FROM geochronic.colaus_f2")
     size = cursor.fetchone()[0]
+
+    if extent == "lausanne":
+
+        res_info = pd.read_sql(
+            "SELECT pt, has_moved_dist, reli FROM geochronic.f2_geo_vaud f, lausanne_sectors_extent l WHERE st_intersects(f.geometry, l.geometry)", conn)
+        print("Number of participants in Lausanne: " +
+              str(res_info.shape[0]) + " (" + str(round(100*res_info.shape[0]/size, 2)) + "%)")
+
+        outcomes = outcomes[outcomes.pt.isin(res_info.pt)]
+        covariates = covariates[covariates.pt.isin(res_info.pt)]
+
+    else:
+        res_info = pd.read_sql(
+            "SELECT pt, has_moved_dist, reli FROM geochronic.f2_geo_vaud", conn)
 
     print()
     print('DROP MISSING OUTCOMES')
@@ -101,12 +119,26 @@ def main():
         raise Exception("Columns are missing")
 
     print()
+    print("DROP PT WITH MISSING HA CHARACTERISTICS")
+
+    res_info = pd.read_sql(
+        "SELECT * FROM geochronic.ha_characteristics", conn)
+    print("Number of indiividuals with missing neighborhood characteristics: " +
+          str(f2_study_dataset[~f2_study_dataset.reli.isin(res_info.reli)].shape[0]) + " (" + str(round(100*f2_study_dataset[~f2_study_dataset.reli.isin(res_info.reli)].shape[0]/size, 2)) + "%)")
+
+    f2_study_dataset = f2_study_dataset[f2_study_dataset.reli.isin(
+        res_info.reli)]
+
+    print()
     print('SAVE')
 
-    db.import_data('geosan', 'aladoy', f2_study_dataset, 'f2_study_dataset', pk='pt',
+    print("Size of the final dataset: " +
+          str(f2_study_dataset.shape[0]) + "( " + str(round(100*f2_study_dataset.shape[0]/size, 2)) + "%)")
+
+    db.import_data('geosan', 'aladoy', f2_study_dataset, 'f2_study_dataset_' + extent, pk='pt',
                    schema='geochronic', idx_geom=True, ifexists='replace')
     bu.save_gdf(os.sep.join([project_dir, "processed_data"]),
-                'f2_study_dataset.gpkg',  f2_study_dataset, driver="GPKG")
+                'f2_study_dataset_'+extent+'.gpkg',  f2_study_dataset, driver="GPKG")
 
     sys.stdout.close()
 

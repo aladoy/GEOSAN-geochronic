@@ -1,25 +1,36 @@
 require(stats)
 require(sf)
+require(MASS)
 require(tidyverse)
 require(caret)
+require(DBI)
+require(mgcv)
 
 # LOAD COLAUS DATA
-load_participants <- function(con){
+load_participants <- function(con, laus_only=TRUE, drop_geom=TRUE){
   
-  data.sf <- read_sf(con, query="SELECT *, ST_X(geometry) as coordx, ST_Y(geometry) as coordy FROM geochronic.f2_study_dataset")
+  data <- read_sf(con, query="SELECT *, ST_X(geometry) as coordx, ST_Y(geometry) as coordy FROM geochronic.f2_study_dataset")
+  reli.laus <- dbGetQuery(con, "SELECT reli FROM lausanne_reli_polygon") %>% pull()
   
   # Add noise to points location to prevent duplicated points.
-  data.sf <- data.sf %>% 
+  data <- data %>% 
     mutate(coordx=jitter(coordx), coordy=jitter(coordy))
   
   # Drop geometry
-  data <- data.sf %>% st_drop_geometry()
+  if(drop_geom == TRUE){
+    data <- data %>% st_drop_geometry()
+  }
+  
   
   # Rename several factors and create a factor for moving > 300m (bandwidth used for spatial autocorrelation of environmental covariates) 
   data <- data %>% 
     mutate(sex = if_else(sex==0, "W", "M"), 
            education = case_when(education==1 ~ "High", education==2 ~ "Medium", education==3 ~ "Low")) %>%
-    mutate(moved = if_else((has_moved_dist <= 300) | (is.na(has_moved_dist)), 0, 1)) 
+    mutate(out_laus = if_else(reli %in% reli.laus, 0, 1)) 
+  
+  if(laus_only == TRUE){
+    data <- data %>% filter(out_laus == 0)
+  }
   
   return(data)
 }
@@ -54,12 +65,12 @@ add_env_info <- function(indiv){
 
 
 # FILTER DATASET FOR A SPECIFIED OUTCOME
-select_outcome <- function(df, outcome, cov_indiv, cov_env){
+select_outcome_regression <- function(df, outcome, cov_indiv, cov_env){
   
   df <- df %>% 
     mutate_at(cov_indiv[! cov_indiv == "age"], as.factor) %>% 
     mutate(diabetes = factor(!!as.name(outcome), levels = c("0", "1"))) %>%
-    dplyr::select(pt, !!as.name(outcome), all_of(cov.indiv), coordx, coordy, all_of(cov.env), reli)
+    dplyr::select(pt, outcome, !!as.name(outcome), all_of(cov.indiv), coordx, coordy, all_of(cov.env), reli)
   
   print(paste("Outcome selected: ", outcome))
   print(paste("Prevalence: ", round(100*nrow(df %>% filter(!!as.name(outcome)=="1"))/nrow(df),2)))
@@ -74,7 +85,8 @@ create_train_dataset <- function(df, frac=0.80, seed=NULL){
   if(is.null(seed)){
     train <- df %>% dplyr::sample_frac(frac) 
   }else{
-    train <- df %>% dplyr::sample_frac(frac, seed=seed) 
+    set.seed(seed)
+    train <- df %>% dplyr::sample_frac(frac)
   }
   test  <- dplyr::anti_join(df, train, by = 'pt')
   

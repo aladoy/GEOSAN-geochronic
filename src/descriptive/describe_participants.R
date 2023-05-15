@@ -7,8 +7,8 @@ source('/mnt/data/GEOSAN/FUNCTIONS/GIRAPH-functions/geosan_funcs/password_utils.
 
 setwd("/mnt/data/GEOSAN/RESEARCH PROJECTS/GEOCHRONIC @ LASIG (EPFL)/GEOSAN-geochronic/src/")
 
-con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",askForPassword(),dbname="geosan")
-#con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",rstudioapi::askForPassword(),dbname="geosan")
+#con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",askForPassword(),dbname="geosan")
+con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",rstudioapi::askForPassword(),dbname="geosan")
 
 # FUNCTIONS ---------------------------------------------------------------
 
@@ -49,7 +49,7 @@ cat(paste0("Date:", Sys.Date(),'\n'), file = file_res, append = FALSE) #Overwrit
 
 indiv.b <- st_read("../processed_data/b_indiv_covariates.gpkg")
 
-indiv.f2 <- read_sf(con, query="SELECT * FROM geochronic.f2_study_dataset") # including sex, age, etc. from colaus_baseline
+indiv.f2 <- read_sf(con, query="SELECT * FROM geochronic.f2_study_dataset_lausanne") # including sex, age, etc. from colaus_baseline
 
 # Characteristics of participants -----------------------------------------
 
