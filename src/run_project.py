@@ -22,22 +22,22 @@ def main():
     # execute_code(subdir_db, "create_materialized_views.sh", interpreter='sh')
     # execute_code(subdir_db, "comment_tables.sh", interpreter='sh')
 
-    # # Add residential information
+    # # # Add residential information
     # execute_code(subdir_wrang, "assign_to_reli.py")
     # execute_code(subdir_wrang, "build_residential_history.py")
 
     # Define neighborhood (ha) characteristics
     execute_code(subdir_wrang, "build_ha_characteristics.py")
 
-    # Define outcomes and covariates
-    execute_code(subdir_wrang, "define_outcomes.R", interpreter='Rscript')
-    execute_code(subdir_wrang, "define_indiv_covariates.R",
-                 interpreter='Rscript')
-    execute_code(subdir_db, "create_study_dataset.py")
+    # # Define outcomes and covariates
+    # execute_code(subdir_wrang, "define_outcomes.R", interpreter='Rscript')
+    # execute_code(subdir_wrang, "define_indiv_covariates.R",
+    #              interpreter='Rscript')
+    # execute_code(subdir_db, "create_study_dataset.py")
 
-    # ESDA
-    execute_code(subdir_descr, "describe_participants.R",
-                 interpreter='Rscript')
+    # # ESDA
+    # execute_code(subdir_descr, "describe_participants.R",
+    #              interpreter='Rscript')
 
 
 def execute_code(program_subdir, program_name, interpreter="python"):

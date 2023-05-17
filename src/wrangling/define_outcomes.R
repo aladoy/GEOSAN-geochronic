@@ -3,79 +3,69 @@
 library(tidyverse)
 library(sf)
 require(RPostgreSQL)
-source('/mnt/data/GEOSAN/FUNCTIONS/GIRAPH-functions/geosan_funcs/password_utils.R')
 
 setwd("/mnt/data/GEOSAN/RESEARCH PROJECTS/GEOCHRONIC @ LASIG (EPFL)/GEOSAN-geochronic/src/")
 
-con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",askForPassword(),dbname="geosan")
-# con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",rstudioapi::askForPassword(),dbname="geosan")
+source('/mnt/data/GEOSAN/FUNCTIONS/GIRAPH-functions/geosan_funcs/password_utils.R')
+source('wrangling/utils_define_outcomes.R')
 
-data <- read_sf(con, query="SELECT * FROM geochronic.f2_geo_vaud")
+
+#con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",askForPassword(),dbname="geosan")
+con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",rstudioapi::askForPassword(),dbname="geosan")
+
+
+
+
+#data <- read_sf(con, query="SELECT * FROM geochronic.f2_geo_vaud")
 
 # FUNCTIONS ---------------------------------------------------------------
 
-count_distinct_val <- function(var){
-  data %>% 
-    st_drop_geometry() %>% 
-    group_by(!!as.name(var)) %>% 
-    summarise(n())
-}
+period <- "f1"
 
-write <- function(text){
-  cat(paste(text, "\n\n"), file=file_res, append=TRUE)
-}
-
-capture <- function(result){
-  capture.output(result, file=file_res, append=TRUE)
-}
-
-count_unique_combinations <- function(outcome){
-  list_name <- paste0("outcomes.", outcome)
-  print(data %>% st_drop_geometry() %>% select(all_of(!!as.name(list_name)), !!as.name(outcome)) %>% group_by_all() %>% summarise(n()), n=Inf) %>% capture()
-}
-
-print_final_stats <- function(var){
-  
-  subset <- data.outcomes %>% st_drop_geometry() %>% select(pt, !!as.name(var))
-  
-  n = subset %>% nrow()
-  cases <- subset %>% filter(!!as.name(var)==1) %>% nrow()
-  nan <- subset %>% filter(is.nan(!!as.name(var))) %>% nrow()
-  
-  write("")
-  write(paste("Statistics for", str_to_upper(var)))
-  print(paste("Cases:", cases, "(", round(100*(cases/n),2), "%)")) %>% capture()
-  print(paste("Missing values:", nan, "(", round(100*(nan/n),2), "%)")) %>% capture()
-  
-}
-
+data <- load_participants(con, period=period)
 
 
 #Create file to store results
-file_res=paste0("../results/code_outputs/define_outcomes.txt")
-cat(paste0("Date:", Sys.Date(),'\n'), file = file_res, append = FALSE) #Overwrite the file
+f=paste0("../results/code_outputs/define_outcomes_",period,".txt")
+cat(paste0("Date:", Sys.Date(),'\n'), file = f, append = FALSE) #Overwrite the file
 
 
 # Cardiovascular diseases -------------------------------------------------
 
-write("\n--------------")
-write("CARDIOVASCUALR DISEASES")
-write("--------------")
+write("\n--------------", f)
+write("CARDIOVASCUALR DISEASES", f)
+write("--------------", f)
 
-outcomes.cvd <- c("cvdbase_adj", "f2cvd")
-lapply(outcomes.cvd, count_distinct_val) %>% capture()
 
-write("note: if no cvd was reported at baseline, cvdbase_adj=NA -> change to 0")
+if(period=="b"){
+  
+  outcomes.cvd <- c("cvdbase_adj")
+  write("definition: baseline CVD (cvdbase_adj=1)", f)
+  
+}else if(period=="f1"){
+  
+  outcomes.cvd <- c("cvdbase_adj", "f1cvd")
+  write("definition: baseline CVD (cvdbase_adj=1) and/or CVD event since baseline (f1cvd=1)", f)  
+  
+}else if(period=="f2"){
+  
+  outcomes.cvd <- c("cvdbase_adj", "f2cvd")
+  write("definition: baseline CVD (cvdbase_adj=1) and/or CVD event since baseline (f2cvd=1)", f)
+
+}
+
+lapply(outcomes.cvd, count_distinct_val, data=data) %>% capture(f)
+
+write("note: if no cvd was reported at baseline, cvdbase_adj=NA -> change to 0", f)
 data <- data %>% mutate(cvdbase_adj = replace(cvdbase_adj, is.na(cvdbase_adj), 0))
 
-write("definition: baseline CVD (cvdbase_adj=1) and/or CVD event since baseline (f2cvd=1)")
 data <- data %>% 
   mutate(cvd = case_when(
     if_any(all_of(outcomes.cvd), ~ .== 1) ~ 1, 
     if_all(all_of(outcomes.cvd), ~is.na(.)) ~ NaN, 
     TRUE ~ 0))
 
-count_unique_combinations("cvd") %>% capture()
+count_unique_combinations("cvd", data=data) %>% capture(f)
 
 
 # Obesity ----------------------------------------------------------------
@@ -125,69 +115,69 @@ count_unique_combinations("diabetes") %>% capture()
 
 # Hypertension ----------------------------------------------------------------
 
-write("\n--------------")
-write("HYPERTENSION")
-write("--------------")
+write("\n--------------", f)
+write("HYPERTENSION", f)
+write("--------------", f)
 
 outcomes.hypertension <- c("f2hta", "f2crbpmed")
-lapply(outcomes.hypertension, count_distinct_val) %>% capture()
+lapply(outcomes.hypertension, count_distinct_val) %>% capture(f)
 
-write("note: in case of no drug treatment (f2crbpmed=2) -> change to 0, in case of 'Not relevant' (f2crbpmed=8) -> change to 0 \n  in case of 'Does not know' (f2crbpmed=9) -> change to NA")
+write("note: in case of no drug treatment (f2crbpmed=2) -> change to 0, in case of 'Not relevant' (f2crbpmed=8) -> change to 0 \n  in case of 'Does not know' (f2crbpmed=9) -> change to NA", f)
 data <- data %>% mutate(f2crbpmed = replace(f2crbpmed, f2crbpmed==8, 0),
                         f2crbpmed = replace(f2crbpmed, f2crbpmed==2, 0),
                         f2crbpmed = replace(f2crbpmed, f2crbpmed==9, NA))
 
-write("definition: hypertension defined as >140/90 (f2hta=1) and/or medication for high blood pressure (f2crbpmed=1)")
+write("definition: hypertension defined as >140/90 (f2hta=1) and/or medication for high blood pressure (f2crbpmed=1)", f)
 data <- data %>% 
   mutate(hypertension = case_when(
     if_any(all_of(outcomes.hypertension), ~ .== 1) ~ 1, 
     if_all(all_of(outcomes.hypertension), ~ .== 0) ~ 0, 
     TRUE ~ NaN))
 
-count_unique_combinations("hypertension") %>% capture()
+count_unique_combinations("hypertension") %>% capture(f)
 
 
 # Dyslipidemia ----------------------------------------------------------------
 
-write("\n--------------")
-write("DYSLIPIDEMIA")
-write("--------------")
+write("\n--------------", f)
+write("DYSLIPIDEMIA", f)
+write("--------------", f)
 
-write("note: for dyslipidemia, we converted f2chol and f2ldlch as binary variables based on the threshold defined in Abolhassani et al. (2017). ")
+write("note: for dyslipidemia, we converted f2chol and f2ldlch as binary variables based on the threshold defined in Abolhassani et al. (2017). ", f)
 data <- data %>% mutate(f2chol = if_else(f2chol>6.5, 1, 0),
                         f2ldlch = if_else(f2ldlch>4.1, 1, 0))
 
 outcomes.dyslipidemia <- c("f2hypolip", "f2chol", "f2ldlch")
-lapply(outcomes.dyslipidemia, count_distinct_val) %>% capture()
+lapply(outcomes.dyslipidemia, count_distinct_val) %>% capture(f)
 
-write("note: in case of 'Not relevant' (f2hypolip=8) -> change to 0 \n  in case of 'Does not know' (f2hypolip=9) -> change to NA")
+write("note: in case of 'Not relevant' (f2hypolip=8) -> change to 0 \n  in case of 'Does not know' (f2hypolip=9) -> change to NA", f)
 data <- data %>% mutate(f2hypolip = replace(f2hypolip, f2hypolip==8, 0),
                         f2hypolip = replace(f2hypolip, f2hypolip==9, NA))
 
-write("definition: Total cholesterol > 6.5mmol/L (f2chol=1) and/or LDL-cholesterol > 4.1mmol/L (f2ldlch=1) hypolipidemic drug treatment (f2hypolip=1)")
+write("definition: Total cholesterol > 6.5mmol/L (f2chol=1) and/or LDL-cholesterol > 4.1mmol/L (f2ldlch=1) hypolipidemic drug treatment (f2hypolip=1)", f)
 data <- data %>% 
   mutate(dyslipidemia = case_when(
     if_any(all_of(outcomes.dyslipidemia), ~ .== 1) ~ 1, 
     if_all(all_of(outcomes.dyslipidemia), ~ .== 0) ~ 0, 
     TRUE ~ NaN))
 
-count_unique_combinations("dyslipidemia") %>% capture()
+count_unique_combinations("dyslipidemia") %>% capture(f)
 
 
 # Polypharmacy ----------------------------------------------------------------
 
-write("\n--------------")
-write("POLYPHARMACY")
-write("--------------")
+write("\n--------------", f)
+write("POLYPHARMACY", f)
+write("--------------", f)
 
 outcomes.polypharmacy <- c("polypharm")
-lapply(outcomes.polypharmacy, count_distinct_val) %>% capture()
+lapply(outcomes.polypharmacy, count_distinct_val) %>% capture(f)
 
 write("definition: polypharmacy (polypharm=1)")
 data <- data %>% 
   mutate(polypharmacy = if_else(polypharm==1,1,0))
 
-count_unique_combinations("polypharmacy") %>% capture()
+count_unique_combinations("polypharmacy") %>% capture(f)
 
 
 # Morbidity ----------------------------------------------------------------
@@ -197,27 +187,27 @@ write("MORBIDITY")
 write("--------------")
 
 outcomes.morbidity <- c("cvd", "obesity", "diabetes", "hypertension", "dyslipidemia")
-lapply(outcomes.morbidity, count_distinct_val) %>% capture()
+lapply(outcomes.morbidity, count_distinct_val) %>% capture(f)
 
-write("definition: CVD and/or obesity and/or diabetes and/or hypertension and/or dyslipidemia")
+write("definition: CVD and/or obesity and/or diabetes and/or hypertension and/or dyslipidemia", f)
 data <- data %>% 
   mutate(morbidity = case_when(
     if_any(all_of(outcomes.morbidity), ~ .== 1) ~ 1, 
     if_all(all_of(outcomes.morbidity), ~ .== 0) ~ 0, 
     TRUE ~ NaN))
 
-count_unique_combinations("morbidity") %>% capture()
+count_unique_combinations("morbidity") %>% capture(f)
 
 
 # Multimorbidity ----------------------------------------------------------------
 
-write("\n--------------")
-write("MULTIMORBIDITY")
-write("--------------")
+write("\n--------------", f)
+write("MULTIMORBIDITY", f)
+write("--------------", f)
 
 outcomes.multimorbidity <- c("cvd", "obesity", "diabetes", "hypertension", "dyslipidemia")
 
-write("definition: at least two conditions between CVD, obesity, diabetes, hypertension, dyslipidemia")
+write("definition: at least two conditions between CVD, obesity, diabetes, hypertension, dyslipidemia", f)
 data <- data %>% 
   mutate(multimorbidity = case_when(
     rowSums(across(outcomes.multimorbidity),na.rm = TRUE) >= 2 ~ 1, 
@@ -225,7 +215,7 @@ data <- data %>%
     (rowSums(across(outcomes.multimorbidity),na.rm = TRUE) < 2) & (rowSums(is.na(across(outcomes.multimorbidity))) >= 1) ~ NaN, 
     TRUE ~ 0))
 
-count_unique_combinations("multimorbidity") %>% capture()
+count_unique_combinations("multimorbidity") %>% capture(f)
 
 
 # Extract outcomes --------------------------------------------------------
@@ -241,7 +231,7 @@ data.outcomes <- data %>% select(pt, all_of(outcomes.all))
 lapply(outcomes.all, print_final_stats)
 
 write("Number of participants having a missing outcome: (which we should remove for an eligible dataset:")
-data.outcomes %>% filter_all(any_vars(is.na(.))) %>% nrow() %>% capture()
+data.outcomes %>% filter_all(any_vars(is.na(.))) %>% nrow() %>% capture(f)
 
 st_write(data.outcomes, "../processed_data/f2_outcomes.gpkg", driver='GPKG', delete_layer=TRUE)
 

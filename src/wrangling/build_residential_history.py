@@ -1,6 +1,6 @@
 '''
 This code builds the residential history of CoLaus F2 participants.
-More specifically, it adds a new column in the database to indicate if a participant moved since last examination (F1 / baseline if missing) and at which distance.
+More specifically, it adds a new column in the database to indicate if a participant moved since baseline and at which distance.
 '''
 
 import pandas as pd
@@ -22,7 +22,6 @@ def main():
     engine, conn, cursor = db.connect_db("geosan", "aladoy")
 
     baseline = extract_dataset("geochronic.colaus_b", conn)
-    f1 = extract_dataset("geochronic.colaus_f1", conn)
     # extract VD geocoded indiv. only
     f2 = extract_dataset("geochronic.f2_geo_vaud", conn)
 
@@ -30,7 +29,7 @@ def main():
 
         current_coord = f2.loc[f2.pt == i, 'geometry'].values[0]
 
-        last_coord = get_last_coord(i, f1, baseline)
+        last_coord = get_last_coord(i, baseline)
 
         if last_coord is None:
 
@@ -60,18 +59,14 @@ def extract_dataset(table_name, conn):
     return dataset
 
 
-def get_last_coord(pt, f1, baseline):
+def get_last_coord(pt, baseline):
 
     try:
-        last_coord = f1.loc[f1.pt == pt, 'geometry'].values[0]
+        last_coord = baseline.loc[baseline.pt == pt, 'geometry'].values[0]
 
     except IndexError:
 
-        try:
-            last_coord = baseline.loc[baseline.pt == pt, 'geometry'].values[0]
-
-        except IndexError:
-            last_coord = None
+        last_coord = None
 
     return last_coord
 

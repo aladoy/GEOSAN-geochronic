@@ -77,10 +77,11 @@ def create_study_dataset(extent="vaud"):
     print()
     print('DROP MISSING OUTCOMES')
 
-    cleaned_outcome = drop_missing_val(outcomes, size, list(outcomes)[1])
-    for out in list(outcomes)[2:-1]:
-        cleaned_outcome = drop_missing_val(cleaned_outcome, size, out)
-    outcomes = outcomes[outcomes.pt.isin(cleaned_outcome.pt)]
+    print("note: keep missing outcomes for now, and filter NaN for each outcome specifically during spatial analysis")
+    # cleaned_outcome = drop_missing_val(outcomes, size, list(outcomes)[1])
+    # for out in list(outcomes)[2:-1]:
+    #     cleaned_outcome = drop_missing_val(cleaned_outcome, size, out)
+    # outcomes = outcomes[outcomes.pt.isin(cleaned_outcome.pt)]
 
     print()
     print('DROP MISSING COVARIATES')
