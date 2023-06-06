@@ -34,7 +34,15 @@ def main():
     print('BASELINE')
 
     b = pd.read_csv(os.sep.join(
-        [data_dir, "request_12dec22/Ladoy1.csv"]), delimiter=';')
+        [data_dir, "request_12dec22/Ladoy1.csv"]), sep=';')
+
+    # Only extract antiHTA from last request (because the format was significantly different from other requests)
+    b_newvar = pd.read_csv(os.sep.join(
+        [data_dir, "request_26may23/Ladoy1.csv"]), sep=';')[["pt", "BMI_cat2", "antiHTA"]]
+    b_newvar['antiHTA'] = b_newvar.antiHTA.map(convert_yesno)
+    b_newvar['BMI_cat2'] = b_newvar.BMI_cat2.map(convert_bmi)
+    b = pd.merge(b, b_newvar, how="inner", on="pt")
+
     b_na = b[b.datexam.isna() & b.datarrival.isna()].index
     if b_na.size > 0:
         b = remove_nan(b, b_na)
@@ -45,7 +53,7 @@ def main():
 
     # Insert to database
     b = b.astype({'brnsws': 'Int64', 'edtyp3': 'Int64', 'edtyp4': 'Int64', 'mrtsts2': 'Int64', 'job_curr8': 'Int64', 'cvdbase': 'Int64', 'cvdbase_adj': 'Int64',
-                  'sbsmk': 'Int64', 'HTA': 'Int64', 'hctld': 'Int64', 'dbtld': 'Int64', 'DIAB': 'Int64', 'phyact': 'Int64'})
+                  'sbsmk': 'Int64', 'HTA': 'Int64', 'antiHTA': 'Int64', 'hctld': 'Int64', 'dbtld': 'Int64', 'DIAB': 'Int64', 'phyact': 'Int64', 'BMI_cat2': 'Int64'})
     db.import_data('geosan', 'aladoy', b, 'colaus_b', pk='pt',
                    schema='geochronic', idx_geom=True, ifexists='replace')
 
@@ -54,6 +62,14 @@ def main():
 
     f1 = pd.read_csv(os.sep.join(
         [data_dir, "request_12dec22/Ladoy2.csv"]), delimiter=';')
+
+    # Only extract antiHTA from last request (because the format was significantly different from other requests)
+    f1_newvar = pd.read_csv(os.sep.join(
+        [data_dir, "request_26may23/Ladoy2.csv"]), sep=';')[["pt", "F1BMI_cat2", "F1antiHTA"]]
+    f1_newvar['F1antiHTA'] = f1_newvar.F1antiHTA.map(convert_yesno)
+    f1_newvar['F1BMI_cat2'] = f1_newvar.F1BMI_cat2.map(convert_bmi)
+    f1 = pd.merge(f1, f1_newvar, how="inner", on="pt")
+
     f1_na = f1[f1.F1datexam.isna()].index
     if f1_na.size > 0:
         f1 = remove_nan(f1, f1_na)
@@ -62,8 +78,8 @@ def main():
     f1 = add_geo(f1, f1_geo)
 
     # Insert to database
-    f1 = f1.astype({'F1mrtsts2': 'Int64', 'F1job_curr8': 'Int64', 'F1sbsmk': 'Int64', 'F1HTA': 'Int64',
-                    'F1hctld': 'Int64', 'F1dbtld': 'Int64', 'F1DIAB': 'Int64', 'F1CVD': 'Int64'})
+    f1 = f1.astype({'F1mrtsts2': 'Int64', 'F1job_curr8': 'Int64', 'F1sbsmk': 'Int64', 'F1HTA': 'Int64', 'F1antiHTA': 'Int64',
+                    'F1hctld': 'Int64', 'F1dbtld': 'Int64', 'F1DIAB': 'Int64', 'F1CVD': 'Int64', 'F1BMI_cat2': 'Int64'})
     db.import_data('geosan', 'aladoy', f1, 'colaus_f1', pk='pt',
                    schema='geochronic', idx_geom=True, ifexists='replace')
 
@@ -72,6 +88,13 @@ def main():
 
     f2 = pd.read_csv(os.sep.join(
         [data_dir, "request_12dec22/Ladoy3.csv"]), delimiter=';')
+
+    # Only extract antiHTA from last request (because the format was significantly different from other requests)
+    f2_newvar = pd.read_csv(os.sep.join(
+        [data_dir, "request_26may23/Ladoy3.csv"]), sep=';')[["pt", "F2antiHTA"]]
+    f2_newvar['F2antiHTA'] = f2_newvar.F2antiHTA.map(convert_yesno)
+    f2 = pd.merge(f2, f2_newvar, how="inner", on="pt")
+
     f2_na = f2[f2.F2datexam.isna() & f2.F2datquest.isna()].index
     if f2_na.size > 0:
         f2 = remove_nan(f2, f2_na)
@@ -81,7 +104,7 @@ def main():
     f2 = add_geo(f2, f2_geo)
 
     # Insert to database
-    for column in ['F2sex', 'F2mrtsts', 'F2mrtsts2', 'F2dmst', 'F2nochd', 'F2sclhlp1', 'F2sclhlp2', 'F2job_curr1', 'F2job_curr4', 'F2job_curr7', 'F2job_not1', 'F2job_prev4', 'F2family18', 'F2income1', 'F2income2', 'F2income3', 'F2income4', 'F2income5', 'F2income6', 'F2Quest1', 'F2conso_hebdo', 'F2alcool2', 'F2sbsmk', 'F2hypdr', 'F2crbpmed', 'F2HTA', 'F2hctld', 'F2hypolip', 'F2dbtld', 'F2orldrg', 'F2insn', 'F2antiDIAB', 'F2DIAB', 'F2care1', 'F2care1b', 'F2care2', 'F2seden', 'F2BMI_cat2', 'F2waist_cat', 'Polypharm', 'F2CVD']:
+    for column in ['F2sex', 'F2mrtsts', 'F2mrtsts2', 'F2dmst', 'F2nochd', 'F2sclhlp1', 'F2sclhlp2', 'F2job_curr1', 'F2job_curr4', 'F2job_curr7', 'F2job_not1', 'F2job_prev4', 'F2family18', 'F2income1', 'F2income2', 'F2income3', 'F2income4', 'F2income5', 'F2income6', 'F2Quest1', 'F2conso_hebdo', 'F2alcool2', 'F2sbsmk', 'F2hypdr', 'F2crbpmed', 'F2HTA', 'F2antiHTA', 'F2hctld', 'F2hypolip', 'F2dbtld', 'F2orldrg', 'F2insn', 'F2antiDIAB', 'F2DIAB', 'F2care1', 'F2care1b', 'F2care2', 'F2seden', 'F2BMI_cat2', 'F2waist_cat', 'Polypharm', 'F2CVD']:
         f2[column] = f2[column].astype('Int64')
     db.import_data('geosan', 'aladoy', f2, 'colaus_f2', pk='pt',
                    schema='geochronic', idx_geom=True, ifexists='replace')
@@ -118,6 +141,28 @@ def remove_nan(df, nas):
 def convert_date(x):
 
     return pd.to_datetime(x, format='%d%b%Y')
+
+
+def convert_yesno(value):
+    if value == "Yes":
+        return 1
+    elif value == "No":
+        return 0
+    else:
+        return value
+
+
+def convert_bmi(value):
+    if value == "Underweight":
+        return 0
+    elif value == "Normal":
+        return 1
+    elif value == "Overweight":
+        return 2
+    elif value == "Obese":
+        return 3
+    else:
+        return value
 
 
 def extract_geo_dataset(cohort_period):
