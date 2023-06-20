@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 '''
 Extract indicators from Commune en Santé project or GEOSAN DB, which are pertinent for chronic diseases.
 '''
@@ -55,10 +57,13 @@ def main():
 
     # HA INDICATORS FROM COMMUNE EN SANTE (ALREADY FILTERED PTOT > 3)
     ha = gpd.read_postgis(
-        "SELECT * FROM ha_indicators", conn, geom_col="geometry")
+        "SELECT reli, e_koord, n_koord, mun_index, green_sp, noise, avg_pph, medrev, r_ffb, r_nn_fra, r_nn_pobl, r_unemp, geometry FROM ha_indicators", conn, geom_col="geometry")
 
-    ha = ha[["reli", "e_koord", "n_koord", "mun_index", "d_sport", "d_stop_tot", "n_acc_ped", "n_acc_bic",
-            "green_sp", "noise", "avg_pph", "medrev", "r_ffb", "r_nn_fra", "r_nn_pobl", "r_unemp", "geometry"]]
+    # Read pedestrian / cyclists accidents
+    accidents = pd.read_sql(
+        "SELECT reli, SUM(nb_acdnt) as nb_acdnt FROM pedestrian_cyclist_accidents WHERE year <=2017 GROUP BY reli", conn)
+
+    ha = pd.merge(ha, accidents, how='left', on='reli')
 
     new_columns = [col.upper() if col !=
                    "geometry" else col for col in ha.columns]

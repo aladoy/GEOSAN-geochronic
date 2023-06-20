@@ -1,15 +1,15 @@
 # LOAD COLAUS PARTICIPANTS
 load_participants <- function(con, period="f2"){
+  # Geocoded participants
   
   if(period=="b"){
-    dataset <- read_sf(con, query="SELECT * FROM geochronic.colaus_b")
+    dataset <- read_sf(con, query="SELECT * FROM geochronic.colaus_b b WHERE NOT ST_IsEmpty(b.geometry)")
   }
   else if(period=="f1"){
-    dataset <- read_sf(con, query="SELECT * FROM geochronic.colaus_f1")
+    dataset <- read_sf(con, query="SELECT * FROM geochronic.colaus_f1 f1 INNER JOIN (SELECT pt, cvdbase_adj FROM  geochronic.colaus_b) b USING (pt) WHERE NOT ST_IsEmpty(f1.geometry)")
   }
   else if(period=="f2"){
-    # Geocoded CoLaus participants with RELI (to match withe contextual characteristics)
-    dataset <- read_sf(con, query="SELECT * FROM geochronic.f2_geo_vaud")
+    dataset <- read_sf(con, query="SELECT * FROM geochronic.colaus_f2 f2 INNER JOIN (SELECT pt, cvdbase_adj FROM  geochronic.colaus_b) b USING (pt) WHERE NOT ST_IsEmpty(f2.geometry)")
   }
   
   return(dataset)
@@ -35,20 +35,26 @@ capture <- function(result, file_res){
 
 count_unique_combinations <- function(outcome, data){
   list_name <- paste0("outcomes.", outcome)
-  print(data %>% st_drop_geometry() %>% select(all_of(!!as.name(list_name)), !!as.name(outcome)) %>% group_by_all() %>% summarise(n()), n=Inf)
+  
+  if (length(list_name) == 1) {
+    print(data %>% st_drop_geometry() %>% dplyr::select(!!as.name(outcome)) %>% group_by_all() %>% summarise(n()), n=Inf)
+  } else {
+    print(data %>% st_drop_geometry() %>% dplyr::select(all_of(!!as.name(list_name)), !!as.name(outcome)) %>% group_by_all() %>% summarise(n()), n=Inf)
+  }
+  
 }
 
-print_final_stats <- function(var, data){
+print_final_stats <- function(var, data=data, file_res=file_res){
   
-  subset <- data %>% st_drop_geometry() %>% select(pt, !!as.name(var))
+  subset <- data %>% st_drop_geometry() %>% dplyr::select(pt, !!as.name(var))
   
   n = subset %>% nrow()
   cases <- subset %>% filter(!!as.name(var)==1) %>% nrow()
   nan <- subset %>% filter(is.nan(!!as.name(var))) %>% nrow()
   
-  write("")
-  write(paste("Statistics for", str_to_upper(var)))
-  print(paste("Cases:", cases, "(", round(100*(cases/n),2), "%)")) %>% capture()
-  print(paste("Missing values:", nan, "(", round(100*(nan/n),2), "%)")) %>% capture()
+  write("", file_res)
+  write(paste("Statistics for", str_to_upper(var)), file_res)
+  print(paste("Cases:", cases, "(", round(100*(cases/n),2), "%)")) %>% capture(file_res)
+  print(paste("Missing values:", nan, "(", round(100*(nan/n),2), "%)")) %>% capture(file_res)
   
 }

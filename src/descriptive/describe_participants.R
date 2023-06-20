@@ -2,12 +2,12 @@
 
 library(tidyverse)
 library(sf)
-require(RPostgreSQL)
+library(RPostgreSQL)
 source('/mnt/data/GEOSAN/FUNCTIONS/GIRAPH-functions/geosan_funcs/password_utils.R')
 
 setwd("/mnt/data/GEOSAN/RESEARCH PROJECTS/GEOCHRONIC @ LASIG (EPFL)/GEOSAN-geochronic/src/")
 
-#con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",askForPassword(),dbname="geosan")
+# con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",askForPassword(),dbname="geosan")
 con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",rstudioapi::askForPassword(),dbname="geosan")
 
 # FUNCTIONS ---------------------------------------------------------------
@@ -54,13 +54,13 @@ indiv.f2 <- read_sf(con, query="SELECT * FROM geochronic.f2_study_dataset_lausan
 # Characteristics of participants -----------------------------------------
 
 cov <- c("age", "sex", "swiss", "cohabiting", "education", "working", "income", "difficulties", "smoking", "drinking", "inactivity")
-cov.b <- cov[!cov %in% c("difficulties", "income")]
+cov.b <- cov[!cov %in% c("difficulties", "income", "inactivity")]
 
 write("\n--------------")
 write("BASELINE")
 write("--------------")
 
-indiv.b <- indiv.b %>% select(pt, datexam, cov.b)
+indiv.b <- indiv.b %>% select(pt, datexam, all_of(cov.b))
 
 write(paste("Number of individuals:", indiv.b %>% nrow()))
 write(paste("Time range:", min(indiv.b$datexam), "/", max(indiv.b$datexam)))
@@ -73,7 +73,7 @@ write("\n--------------")
 write("FOLLOW-UP 2")
 write("--------------")
 
-indiv.f2 <- indiv.f2 %>% select(pt, f2datexam, cov)
+indiv.f2 <- indiv.f2 %>% select(pt, f2datexam, all_of(cov))
 
 write(paste("Number of individuals:", indiv.f2 %>% nrow()))
 write(paste("Time range:", min(indiv.f2$f2datexam, na.rm=TRUE), "/", max(indiv.f2$f2datexam, na.rm=TRUE)))

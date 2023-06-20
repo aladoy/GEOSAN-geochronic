@@ -33,15 +33,16 @@ def main():
 
     print('BASELINE')
 
+    # Import last requrested data because hypolip was missing in previous request
     b = pd.read_csv(os.sep.join(
-        [data_dir, "request_12dec22/Ladoy1.csv"]), sep=';')
+        [data_dir, "request_14jun23/Ladoy1.csv"]), sep=';')
 
-    # Only extract antiHTA from last request (because the format was significantly different from other requests)
-    b_newvar = pd.read_csv(os.sep.join(
-        [data_dir, "request_26may23/Ladoy1.csv"]), sep=';')[["pt", "BMI_cat2", "antiHTA"]]
-    b_newvar['antiHTA'] = b_newvar.antiHTA.map(convert_yesno)
-    b_newvar['BMI_cat2'] = b_newvar.BMI_cat2.map(convert_bmi)
-    b = pd.merge(b, b_newvar, how="inner", on="pt")
+    # # Only extract antiHTA from last request (because the format was significantly different from other requests)
+    # b_newvar = pd.read_csv(os.sep.join(
+    #     [data_dir, "request_26may23/Ladoy1.csv"]), sep=';')[["pt", "BMI_cat2", "antiHTA"]]
+    # b_newvar['antiHTA'] = b_newvar.antiHTA.map(convert_yesno)
+    # b_newvar['BMI_cat2'] = b_newvar.BMI_cat2.map(convert_bmi)
+    # b = pd.merge(b, b_newvar, how="inner", on="pt")
 
     b_na = b[b.datexam.isna() & b.datarrival.isna()].index
     if b_na.size > 0:
@@ -52,8 +53,8 @@ def main():
     b = add_geo(b, b_geo)
 
     # Insert to database
-    b = b.astype({'brnsws': 'Int64', 'edtyp3': 'Int64', 'edtyp4': 'Int64', 'mrtsts2': 'Int64', 'job_curr8': 'Int64', 'cvdbase': 'Int64', 'cvdbase_adj': 'Int64',
-                  'sbsmk': 'Int64', 'HTA': 'Int64', 'antiHTA': 'Int64', 'hctld': 'Int64', 'dbtld': 'Int64', 'DIAB': 'Int64', 'phyact': 'Int64', 'BMI_cat2': 'Int64'})
+    for column in ['brnsws', 'edtyp3', 'edtyp4', 'mrtsts2', 'job_curr8', 'cvdbase', 'cvdbase_adj', 'sbsmk', 'HTA', 'antiHTA', 'hctld', 'dbtld', 'DIAB', 'phyact', 'BMI_cat2', 'hypolip']:
+        b[column] = b[column].astype('Int64')
     db.import_data('geosan', 'aladoy', b, 'colaus_b', pk='pt',
                    schema='geochronic', idx_geom=True, ifexists='replace')
 
@@ -61,14 +62,14 @@ def main():
     print('FOLLOW-UP 1')
 
     f1 = pd.read_csv(os.sep.join(
-        [data_dir, "request_12dec22/Ladoy2.csv"]), delimiter=';')
+        [data_dir, "request_14jun23/Ladoy2.csv"]), delimiter=';')
 
-    # Only extract antiHTA from last request (because the format was significantly different from other requests)
-    f1_newvar = pd.read_csv(os.sep.join(
-        [data_dir, "request_26may23/Ladoy2.csv"]), sep=';')[["pt", "F1BMI_cat2", "F1antiHTA"]]
-    f1_newvar['F1antiHTA'] = f1_newvar.F1antiHTA.map(convert_yesno)
-    f1_newvar['F1BMI_cat2'] = f1_newvar.F1BMI_cat2.map(convert_bmi)
-    f1 = pd.merge(f1, f1_newvar, how="inner", on="pt")
+    # # Only extract antiHTA from last request (because the format was significantly different from other requests)
+    # f1_newvar = pd.read_csv(os.sep.join(
+    #     [data_dir, "request_26may23/Ladoy2.csv"]), sep=';')[["pt", "F1BMI_cat2", "F1antiHTA"]]
+    # f1_newvar['F1antiHTA'] = f1_newvar.F1antiHTA.map(convert_yesno)
+    # f1_newvar['F1BMI_cat2'] = f1_newvar.F1BMI_cat2.map(convert_bmi)
+    # f1 = pd.merge(f1, f1_newvar, how="inner", on="pt")
 
     f1_na = f1[f1.F1datexam.isna()].index
     if f1_na.size > 0:
@@ -78,8 +79,8 @@ def main():
     f1 = add_geo(f1, f1_geo)
 
     # Insert to database
-    f1 = f1.astype({'F1mrtsts2': 'Int64', 'F1job_curr8': 'Int64', 'F1sbsmk': 'Int64', 'F1HTA': 'Int64', 'F1antiHTA': 'Int64',
-                    'F1hctld': 'Int64', 'F1dbtld': 'Int64', 'F1DIAB': 'Int64', 'F1CVD': 'Int64', 'F1BMI_cat2': 'Int64'})
+    for column in ['F1mrtsts2', 'F1job_curr8', 'F1sbsmk', 'F1HTA', 'F1antiHTA', 'F1hctld', 'F1dbtld', 'F1DIAB', 'F1CVD', 'F1BMI_cat2', 'F1hypolip']:
+        f1[column] = f1[column].astype('Int64')
     db.import_data('geosan', 'aladoy', f1, 'colaus_f1', pk='pt',
                    schema='geochronic', idx_geom=True, ifexists='replace')
 
@@ -108,24 +109,6 @@ def main():
         f2[column] = f2[column].astype('Int64')
     db.import_data('geosan', 'aladoy', f2, 'colaus_f2', pk='pt',
                    schema='geochronic', idx_geom=True, ifexists='replace')
-
-    # print()
-    # print('FOLLOW-UP 3')
-
-    # f3 = pd.read_csv(os.sep.join(
-    #     [data_dir, "request_12dec22/Ladoy4.csv"]), delimiter=';')
-    # f3['F3datexam'] = f3.F3datexam.map(convert_date)
-    # f3['F3datquest'] = f3.F3datquest.map(convert_date)
-    # f3_geo = extract_geo_dataset(3)
-    # f3_init = extract_init_dataset(3)
-    # f3 = add_geo(f3, f3_init, f3_geo)
-    # f3 = transform_to_gdf(f3)
-
-    # # Insert to database
-    # for column in ['F3mrtsts', 'F3mrtsts2', 'F3dmst', 'F3nochd', 'F3sclhlp3', 'F3job_curr1', 'F3job_curr4', 'F3job_curr7', 'F3job_not2', 'F3job_prev3', 'F3income3', 'F3income4', 'F3income5', 'F3income6', 'F3assur1', 'F3Quest1', 'F3conso_hebdo', 'F3alcool2', 'F3sbsmk', 'F3hypdr', 'F3crbpmed', 'F3HTA', 'F3hctld', 'F3dbtld', 'F3DIAB', 'F3care1', 'F3care1a', 'F3care1b', 'F3care3', 'F3care3a', 'F3care4', 'F3care4a', 'F3IPAQ_excl', 'F3IPAQ_score', 'F3BMI_cat2', 'F3waist_cat', 'Polypharm', 'F3CVD', 'plz4']:
-    #     f3[column] = f3[column].astype('Int64')
-    # db.import_data('geosan', 'aladoy', f3, 'colaus_f3', pk='NULL',
-    #                schema='geochronic', idx_geom=True, ifexists='replace')
 
     sys.stdout.close()
 

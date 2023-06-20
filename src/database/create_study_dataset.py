@@ -34,7 +34,7 @@ def create_study_dataset(extent="vaud"):
         os.sep.join(
             [
                 project_dir,
-                "processed_data/f2_outcomes.gpkg",
+                "processed_data/f2_adjusted_outcomes.gpkg",
             ]
         ),
         driver="GPKG")
@@ -94,22 +94,21 @@ def create_study_dataset(extent="vaud"):
         'pt').fillna(baseline.set_index('pt'))
 
     print('Number of missing covariates after imputing with baseline data')
-    imputed_cov.isna().sum()
+    print(imputed_cov.isna().sum())
     imputed_cov.reset_index(drop=False, inplace=True)
 
-    print('note: drop all missing cov except income (too many NaN)')
-    cleaned_cov = drop_missing_val(
-        imputed_cov, size, list(covariates)[2])
-    for cov in [x for x in list(covariates) if x != 'income'][3:-1]:
-        cleaned_cov = drop_missing_val(cleaned_cov, size, cov)
-    imputed_cov = imputed_cov[imputed_cov.pt.isin(cleaned_cov.pt)]
+    print('note: drop only confounders that will be used in the outcome adjustment')
+    cleaned_cov = imputed_cov.dropna(
+        subset=["age", "sex", "education", "difficulties"])
+    print('Nb of individuals removed: ' +
+          str(imputed_cov.shape[0]-cleaned_cov.shape[0]))
 
     print()
     print('ADD RELI AND RESIDENTIAL HISTORY')
 
     # Gather all the information to create the study dataset
     full_df = merge_dfs(outcomes, res_info)
-    full_df = merge_dfs(full_df, imputed_cov.drop('geometry', axis=1))
+    full_df = merge_dfs(full_df, cleaned_cov.drop('geometry', axis=1))
 
     # Convert & save
     full_gdf = gpd.GeoDataFrame(full_df, crs="EPSG:2056", geometry='geometry')

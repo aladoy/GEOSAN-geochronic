@@ -7,8 +7,8 @@ source('/mnt/data/GEOSAN/FUNCTIONS/GIRAPH-functions/geosan_funcs/password_utils.
 
 setwd("/mnt/data/GEOSAN/RESEARCH PROJECTS/GEOCHRONIC @ LASIG (EPFL)/GEOSAN-geochronic/src/")
 
-con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",askForPassword(),dbname="geosan")
-#con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",rstudioapi::askForPassword(),dbname="geosan")
+#con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",askForPassword(),dbname="geosan")
+con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",rstudioapi::askForPassword(),dbname="geosan")
 
 # Extract participants ----------------------------------------------------
 
@@ -32,9 +32,7 @@ indiv.b <- indiv.b %>% mutate(
   education = edtyp3,
   working = if_else(job_curr8 %in% c(1,2,3), 1, 0),
   smoking = if_else(sbsmk %in% c(0,1), 0, 1),
-  drinking = if_else(conso_hebdo < 14, 0, 1),
-  phyact = replace(phyact, phyact==9, NA),
-  inactivity = if_else(phyact == 0, 1, 0)
+  drinking = if_else(conso_hebdo < 14, 0, 1)
 )
 
 
@@ -54,7 +52,7 @@ indiv.f2 <- indiv.f2 %>% mutate(
 )
 
 
-cov.b <- c("age", "sex", "swiss", "cohabiting", "education", "working", "smoking", "drinking", "inactivity")
+cov.b <- c("age", "sex", "swiss", "cohabiting", "education", "working", "smoking", "drinking")
 indiv.b <- indiv.b %>% select(pt, datexam, all_of(cov.b))
 
 cov.f2 <- c("age", "sex", "swiss", "cohabiting", "education", "working", "income", "difficulties", "smoking", "drinking", "inactivity")
