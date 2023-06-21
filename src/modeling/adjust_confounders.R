@@ -6,6 +6,7 @@ require(RPostgreSQL)
 library(sf)
 library(tidyverse)
 library(car)
+library(MASS)
 
 source('/mnt/data/GEOSAN/FUNCTIONS/GIRAPH-functions/geosan_funcs/password_utils.R')
 source('modeling/utils_model_individual_outcomes.R')
@@ -30,10 +31,39 @@ names(ha)[names(ha) != c("reli", "geometry")] <- toupper(names(ha)[names(ha) != 
 # Merge
 data <- inner_join(ha %>% st_drop_geometry(), data, by="reli") %>% st_drop_geometry()
 
+
+data %>% filter(MEDREV>150)
+
+# data %>% filter(MEDREV>150)
+data %>% filter(PTOT<10)
+
+assess_normality <- function(df, var){
+  distrib <- ggplot(df) +
+    geom_histogram(aes(x = !!sym(var)), fill = "steelblue", alpha = 0.5) +
+    theme_minimal() 
+  print(distrib)
+  shapiro.test(df[[var]])
+}
+
+assess_normality(data, "GREEN_SP")
+assess_normality(data, "PTOT")
+assess_normality(data, "NOISE")
+assess_normality(data, "PM25")
+assess_normality(data, "NO2")
+assess_normality(data, "MEDREV")
+assess_normality(data, "R_UNEMP")
+assess_normality(data, "R_NN_POBL")
+assess_normality(data, "R_FFB")
+assess_normality(data, "R_NN_FRA")
+
+log_vars <- c("PM25", "NO2")
+
 # Standardize environmental variables
 data_std <- data %>%
-  mutate_at(cov.env, ~ scale(.)[,1])
+  mutate_at(log_vars, ~ log(.))
 
+data_std <- data_std %>%
+  mutate_at(cov.env, ~ scale(.)[,1])
 
 
 select_outcome <- function(df, outcome, confounders, envs){
@@ -141,7 +171,7 @@ compare_models(cvd.ols.2, cvd.ols.4)
 
 # DIABETES ----------------------------------------------------------------
 
-sink("../results/regression_models/diabetes/spatial_variation_risk_cvd.txt")
+sink("../results/regression_models/diabetes/spatial_variation_risk_diabetes.txt")
 cat(paste0("Date:", Sys.Date(),'\n')) #Overwrite the file
 
 diab.data <- select_outcome(data_std, "diabetes", cov.indiv, cov.env)
@@ -166,7 +196,7 @@ compare_models(diab.log.2, diab.log.3)
 
 diab.log.4 <- update(diab.log.2,  '~ . + swiss')
 print_model_summary(diab.log.4)
-compare_models(diab.log.2, diab.log.4)
+compare_models(diab.log.1, diab.log.4)
 
 print("Adding marital status and nationality do not contribute substantially to the model's performance and may introduce unnecessary complexity so we keep the former model.")
 
@@ -189,6 +219,7 @@ diab.ols.2 <- update(diab.ols.1, '~ . - NO2')
 print_model_summary(diab.ols.2)
 vif(diab.ols.2)
 
+
 diab.ols.3 <- diab.ols.2 %>% step( direction = "backward", trace = 1)
 
 diab.ols.4 <- lm(diabetes_adj ~ GREEN_SP + R_NN_POBL, data=diab.data)
@@ -200,7 +231,7 @@ sink()
 
 # HYPERTENSION ------------------------------------------------------------
 
-sink("../results/regression_models/hypertension/spatial_variation_risk_cvd.txt")
+sink("../results/regression_models/hypertension/spatial_variation_risk_hypertension.txt")
 cat(paste0("Date:", Sys.Date(),'\n')) #Overwrite the file
 
 hyp.data <- select_outcome(data_std, "hypertension", cov.indiv, cov.env)
@@ -262,7 +293,7 @@ sink()
 
 # OBESITY ------------------------------------------------------------
 
-sink("../results/regression_models/obesity/spatial_variation_risk_cvd.txt")
+sink("../results/regression_models/obesity/spatial_variation_risk_obesity.txt")
 cat(paste0("Date:", Sys.Date(),'\n')) #Overwrite the file
 
 obes.data <- select_outcome(data_std, "obesity", cov.indiv, cov.env)
@@ -318,7 +349,7 @@ sink()
 
 # DYSLIPIDEMIA ------------------------------------------------------------
 
-sink("../results/regression_models/dyslipidemia/spatial_variation_risk_cvd.txt")
+sink("../results/regression_models/dyslipidemia/spatial_variation_risk_dyslipidemia.txt")
 cat(paste0("Date:", Sys.Date(),'\n')) #Overwrite the file
 
 
@@ -377,7 +408,7 @@ sink()
 # MERGE & SAVE ------------------------------------------------------------
 
 # Left join with dataset
-adjusted_outcomes <- data %>% dplyr::select(-all_of(cov.indiv)) %>%
+adjusted_outcomes <- data_std %>% dplyr::select(-all_of(cov.indiv)) %>%
   left_join(cvd.data %>% dplyr::select(pt, cvd_adj), by='pt') %>% 
   left_join(diab.data %>% dplyr::select(pt, diabetes_adj), by='pt') %>%
   left_join(hyp.data %>% dplyr::select(pt, hypertension_adj), by='pt') %>%
