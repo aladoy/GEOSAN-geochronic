@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 '''
 Extract indicators from Commune en Santé project or GEOSAN DB, which are pertinent for chronic diseases.
 '''
@@ -57,7 +55,7 @@ def main():
 
     # HA INDICATORS FROM COMMUNE EN SANTE (ALREADY FILTERED PTOT > 3)
     ha = gpd.read_postgis(
-        "SELECT reli, e_koord, n_koord, mun_index, green_sp, noise, avg_pph, medrev, r_ffb, r_nn_fra, r_nn_pobl, r_unemp, geometry FROM ha_indicators", conn, geom_col="geometry")
+        "SELECT reli, e_koord, n_koord, mun_index, noise, medrev, r_ffb, r_nn_fra, r_nn_pobl, r_unemp, geometry FROM ha_indicators WHERE ST_Intersects(geometry, (SELECT geometry FROM lausanne_sectors_extent))", conn, geom_col="geometry")
 
     # Read pedestrian / cyclists accidents
     accidents = pd.read_sql(
@@ -74,11 +72,25 @@ def main():
     pm10 = extract_airpol("PM10")
     no2 = extract_airpol("NO2")
 
+    # WALKABILITY
+    walkability = gpd.read_file(
+        os.sep.join(
+            [
+                project_dir,
+                "processed_data/walkability_measures.gpkg"
+            ]
+        ),
+        driver="GPKG",
+    )
+    walkability = walkability.rename(
+        columns=lambda x: x.upper()).drop("GEOMETRY", axis=1)
+
     # CONCATENATE ALL VARIABLES IN A SINGLE INDEX
     indicators = pd.merge(ha, statpop, on="RELI", how="inner")
     indicators = pd.merge(indicators, pm25, on="RELI", how="inner")
     indicators = pd.merge(indicators, pm10, on="RELI", how="inner")
     indicators = pd.merge(indicators, no2, on="RELI", how="inner")
+    indicators = pd.merge(indicators, walkability, on="RELI", how="inner")
 
     print("Number of hectares with data: ", indicators.shape[0])
 
