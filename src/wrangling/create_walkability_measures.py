@@ -35,16 +35,13 @@ def main():
 
     # GREENSPACES
 
-    green = gpd.read_file(
-        os.sep.join([geosan_db_dir, "LAND COVER VD/2022/Fixed_geometries/MOVD_CAD_TPR_CSVERT_S_FIXED.gpkg"]), driver="GPKG"
-    )
-    wood = gpd.read_file(
-        os.sep.join([geosan_db_dir, "LAND COVER VD/2022/Fixed_geometries/MOVD_CAD_TPR_CSBOIS_S_FIXED.gpkg"]), driver="GPKG"
+    cadastre = gpd.read_file(
+        os.sep.join([geosan_db_dir, "LAND COVER VD/2015/LC_merged_fixed.geojson"]), driver="GeoJSON"
     )
     # Create a single geodaframe with green and wood (measure of greeness)
-    greenspace = gpd.GeoDataFrame(pd.concat([green, wood], ignore_index=True))
+    greenspace = cadastre[cadastre.Genre.str.startswith(("boisee.", "verte."))]
     intersect_greenspace = gpd.sjoin(
-        ha_buff, greenspace[["ID", "geometry"]], how="left", predicate="intersects"
+        ha_buff, greenspace[["id", "geometry"]], how="left", predicate="intersects"
     )
 
     # Define greenspace availability as the percentage of greenspace area over the buffer area
@@ -96,7 +93,7 @@ def intersection_area(landcov_polys, reli_buff):
 def compute_area(reli, ha_buff, landcov_df, joined_df):
 
     subs = joined_df[joined_df.reli == reli]
-    polys = landcov_df[landcov_df.ID.isin(subs.ID.unique())]
+    polys = landcov_df[landcov_df.id.isin(subs.id.unique())]
 
     try:
         area_intersect = (

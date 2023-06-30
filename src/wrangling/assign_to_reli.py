@@ -8,8 +8,8 @@ import os
 
 sys.path.append(r"/mnt/data/GEOSAN/FUNCTIONS/GIRAPH-functions/")
 try:
-    import db_utils as db # commit: bf78b2d
-    import basic_utils as bu # commit: bf78b2d
+    import db_utils as db  # commit: bf78b2d
+    import basic_utils as bu  # commit: bf78b2d
 except FileNotFoundError:
     print("Wrong file or file path")
 
@@ -23,6 +23,8 @@ def main():
                              conn, geom_col="geometry")
     reli = gpd.read_postgis("SELECT * FROM vd_reli_polygon",
                             conn, geom_col="geometry")
+    
+    print("Note: For Lausanne, all individuals could be assigned to a RELI at less than 50m.")
 
     # Restrict searching radius to 300 meters
     indiv['reli'] = indiv.apply(bu.find_nearest_reli, args=(reli, 300), axis=1)
