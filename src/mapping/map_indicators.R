@@ -1,38 +1,32 @@
-library(tidyverse)
-library(sf)
-library(ggplot2)
-library(viridis)
-library(classInt)
-library(ggspatial)
-library(gridExtra)
+require(tidyverse)
+require(sf)
+require(ggplot2)
+require(viridis)
+require(classInt)
+require(ggspatial)
+require(RPostgreSQL)
+require(corrplot)
 
 setwd("/mnt/data/GEOSAN/RESEARCH PROJECTS/GEOCHRONIC @ LASIG (EPFL)/GEOSAN-geochronic/src/")
 
 con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",rstudioapi::askForPassword(),dbname="geosan")
 
-ha <- read_sf(con, query="SELECT reli, INTDEN, GREEN_SP, NOISE, PM25, NO2, MEDREV, R_UNEMP, R_NN_POBL, R_FFB, R_NN_FRA, geometry FROM geochronic.ha_characteristics WHERE st_intersects(geometry, (SELECT geometry FROM lausanne_sectors_extent))")
-names(ha)[names(ha) != c("reli", "geometry")] <- toupper(names(ha)[names(ha) != c("reli", "geometry")])
+ha <- read_sf(con, query="SELECT reli, INTDEN, GREEN_SP, NOISE, PM25, NO2, MEDREV, R_UNEMP, R_NN_POBL, R_NN_CH, geometry FROM geochronic.ha_characteristics WHERE st_intersects(geometry, (SELECT geometry FROM lausanne_sectors_extent))")
+#names(ha)[names(ha) != c("reli", "geometry")] <- toupper(names(ha)[names(ha) != c("reli", "geometry")])
+
+columns_to_convert <- c("intden", "green_sp", "noise", "pm25", "no2", "medrev", "r_unemp", "r_nn_pobl", "r_nn_ch")
+names(ha)[names(ha) %in% columns_to_convert] <- toupper(names(ha)[names(ha) %in% columns_to_convert])
 
 
 lausanne <- read_sf(con, query="SELECT * FROM lausanne_sectors_extent")
 lake <- st_read("../qgis/lake_border_buffered.geojson")
 
 
-c("INTDEN", "GREEN_SP", "NOISE", "PM25", "NO2", "MEDREV", "R_UNEMP", "R_NN_POBL", "R_FFB", "R_NN_FRA")
 
-choropleth_map(ha, "INTDEN", "Intersection Density (-)", "Street connectivity within a 500-meters radius buffer")
-choropleth_map(ha, "GREEN_SP", "Greeness (%)", "Proportion of green spaces within a 500-meters radius buffer")
-choropleth_map(ha, "NOISE", "Noise (dB)", "Nighttime Noise Exposure from Roadway and Railway Sources")
-choropleth_map(ha, "PM25", "Concentration (ug/m3)", "Exposure to fine particulate matter PM2.5")
-choropleth_map(ha, "NO2", "Concentration (ug/m3)", "Exposure to nitrogen dioxide (NO2)")
-choropleth_map(ha, "MEDREV", "Income (kCHF)", "Median annual income per household")
-choropleth_map(ha, "R_UNEMP", "Rate (%)", "Unemployment rate for population aged 15 and above")
-choropleth_map(ha, "R_NN_POBL", "Rate (%)", "Proportion of population aged 15 and above with compulsory education")
-choropleth_map(ha, "R_FFB", "Rate (%)", "Proportion of foreign population")
-choropleth_map(ha, "R_NN_FRA", "Rate (%)", "Proportion of non-French speaking population")
+# SPATIAL DISTRIBUTION ----------------------------------------------------
 
 
-choropleth_map <- function(ha_df, ind_name, legend_name, title_name, class_type, save=TRUE){
+choropleth_map <- function(ha_df, ind_name, legend_name, title_name, class_type="pretty", save=TRUE){
   
   breaks <- classIntervals(ha_df %>% pull(!!as.name(ind_name)), n = 5, style = class_type)
   
@@ -74,6 +68,37 @@ choropleth_map <- function(ha_df, ind_name, legend_name, title_name, class_type,
   return(p)
   
 }
+
+
+cov <- c("INTDEN", "GREEN_SP", "NOISE", "PM25", "NO2", "MEDREV", "R_UNEMP", "R_NN_POBL", "R_NN_CH")
+
+choropleth_map(ha, "INTDEN", "Intersection Density (-)", "Street connectivity within a 500-meters radius buffer")
+choropleth_map(ha, "GREEN_SP", "Greeness (%)", "Proportion of green spaces within a 500-meters radius buffer")
+choropleth_map(ha, "NOISE", "Noise (dB)", "Nighttime Noise Exposure from Roadway and Railway Sources")
+choropleth_map(ha, "PM25", "Concentration (ug/m3)", "Exposure to fine particulate matter PM2.5")
+choropleth_map(ha, "NO2", "Concentration (ug/m3)", "Exposure to nitrogen dioxide (NO2)")
+choropleth_map(ha, "MEDREV", "Income (kCHF)", "Median annual income per household")
+choropleth_map(ha, "R_UNEMP", "Rate (%)", "Unemployment rate for population aged 15 and above")
+choropleth_map(ha, "R_NN_POBL", "Rate (%)", "Population aged 15+ with compulsory education")
+choropleth_map(ha, "R_NN_CH", "Rate (%)", "Proportion of foreign population")
+
+
+# CORRELATION -------------------------------------------------------------
+
+data_scaled <- ha %>% 
+  st_drop_geometry() %>% 
+  dplyr::select(all_of(cov)) %>% 
+  filter(complete.cases(.)) %>%
+  scale()
+
+corr_matrix <- cor(data_scaled)
+print(corr_matrix)
+
+png("../results/env_characteristics/corrplot.png", bg="white", width=200, height=150, units=c("mm"), res=300)
+corrplot(corr_matrix,tl.col = "black")
+dev.off()
+
+
 
 
 

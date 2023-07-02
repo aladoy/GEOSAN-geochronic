@@ -6,6 +6,8 @@ import pandas as pd
 import geopandas as gpd
 import sys
 import os
+import numpy as np
+import matplotlib.pyplot as plt
 
 sys.path.append(r"/mnt/data/GEOSAN/FUNCTIONS/GIRAPH-functions/")
 try:
@@ -46,7 +48,7 @@ def main():
     statpop.rename(columns={"B17BTOT": "PTOT", "H17PTOT": "HTOT",
                             "B17BWTOT": "FTOT", "B17BMTOT": "MTOT"}, inplace=True)
 
-    statpop = statpop[["RELI", "PTOT", "HTOT", "FTOT", "MTOT", "M_45_54", "M_55_64",
+    statpop = statpop[["RELI", "PTOT", "FTOT", "MTOT", "M_45_54", "M_55_64",
                        "M_65_74", "M_75_84", "M_85_M", "F_45_54", "F_55_64", "F_65_74", "F_75_84", "F_85_M"]]
 
     # Compute ratio instead of absolute number for demographics
@@ -55,7 +57,51 @@ def main():
 
     # HA INDICATORS FROM COMMUNE EN SANTE (ALREADY FILTERED PTOT > 3)
     ha = gpd.read_postgis(
-        "SELECT reli, e_koord, n_koord, mun_index, noise, medrev, r_ffb, r_nn_fra, r_nn_pobl, r_unemp, geometry FROM ha_indicators WHERE ST_Intersects(geometry, (SELECT geometry FROM lausanne_sectors_extent))", conn, geom_col="geometry")
+        "SELECT reli, e_koord, n_koord, mun_index, noise, geometry FROM ha_indicators WHERE ST_Intersects(geometry, (SELECT geometry FROM lausanne_sectors_extent))", conn, geom_col="geometry")
+
+    print("Number of hectares in Lausanne: ", ha.shape[0])
+
+    # SOCIAL VARIABLES (MICROREGIONS 2017)
+    #   Extract microregions polygons (and associated characteristics) that intersect each hectare
+    microregions = gpd.read_postgis(
+        """SELECT reli, nbid, r_nn_pobl, r_nn_ch, r_unemp, medrev, p15m, ptot, ST_Intersection(h.geometry, m.geometry) as geometry
+    FROM (SELECT reli, geometry FROM ha_indicators WHERE ST_Intersects(geometry, (SELECT geometry FROM lausanne_sectors_extent))) h,
+    (SELECT nbid, 100*(pfnone + pfobl) as R_NN_POBL, (100-rpnch) as R_NN_CH, 100*adune as R_UNEMP, ciqmd as MEDREV, (ptot-(p0004+p0509+p1014)) as P15M, ptot as PTOT, geometry
+    FROM microgis_microreg) m
+    WHERE ST_Intersects(h.geometry, m.geometry)""",
+        conn, geom_col="geometry")
+
+    microregions.columns = [
+        col.upper() if col != "geometry" else col for col in microregions.columns]
+    microregions["R_NN_POBL"] = np.where(
+        microregions["P15M"] != 0, microregions["R_NN_POBL"] / microregions["P15M"], 0)
+    microregions["R_UNEMP"] = np.where(
+        microregions["P15M"] != 0, microregions["R_UNEMP"] / microregions["P15M"], 0)
+
+    # Initialize new columns
+    ha['R_NN_POBL'] = 0.0
+    ha['R_UNEMP'] = 0.0
+    ha['R_NN_CH'] = 0.0
+    ha['MEDREV'] = 0.0
+
+    # Iterate over each row in the DataFrame
+    for index, row in ha.iterrows():
+
+        r_nn_pobl_avg = calculate_weighted_avg(
+            row.reli, microregions, "R_NN_POBL", type="surface")
+        ha.at[index, 'R_NN_POBL'] = r_nn_pobl_avg
+
+        r_unemp_avg = calculate_weighted_avg(
+            row.reli, microregions, "R_UNEMP", type="surface")
+        ha.at[index, 'R_UNEMP'] = r_unemp_avg
+
+        r_nn_ch_avg = calculate_weighted_avg(
+            row.reli, microregions, "R_NN_CH", type="surface")
+        ha.at[index, 'R_NN_CH'] = r_nn_ch_avg
+
+        medrev_avg = calculate_weighted_avg(
+            row.reli, microregions, "MEDREV", type="surface")
+        ha.at[index, 'MEDREV'] = medrev_avg
 
     # Read pedestrian / cyclists accidents
     accidents = pd.read_sql(
@@ -125,6 +171,32 @@ def extract_airpol(var_name):
     df = df[~df["mean"].isna()]
     df.columns = ["RELI", var_name.upper()]
     return df
+
+
+def calculate_weighted_avg(reli, df, var, type="surface"):
+
+    # Filter the DataFrame based on the target RELI value
+    filtered_df = df[df['RELI'] == reli]
+
+    if type == "count":
+        # Calculate the total count of polygons
+        total_count = filtered_df.shape[0]
+
+        # Calculate the weighted mean by polygon count
+        weighted_mean = filtered_df[var].sum() / total_count
+
+    elif type == "surface":
+        # Calculate the total area of all polygons
+        total_area = filtered_df['geometry'].area.sum()
+
+        # Calculate the weighted mean by surface area
+        weighted_mean = (
+            filtered_df[var] * filtered_df['geometry'].area).sum() / total_area
+    else:
+        raise ValueError(
+            "Invalid type value. Please choose either 'count' or 'surface'.")
+
+    return weighted_mean
 
 
 if __name__ == "__main__":
