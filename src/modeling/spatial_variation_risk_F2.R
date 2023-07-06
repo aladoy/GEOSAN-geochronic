@@ -33,7 +33,9 @@ cov.indiv <- c("age", "sex", "swiss", "cohabiting", "education", "working", "dif
 cov.ha <- c("PTOT", "INTDEN", "GREEN_SP", "NOISE", "PM25", "NO2", "MEDREV", "R_UNEMP", "R_NN_POBL", "R_NN_CH")
 
 cov.ha.env <- c("INTDEN", "GREEN_SP", "NOISE", "PM25")
+cov.ha.env.labels <- c("Intersection density [-]", "Greenness [%]", "Nighttime traffic noise [dB]", "PM2.5 exposure [ug/m3]")
 cov.ha.soc <- c("MEDREV", "R_UNEMP", "R_NN_POBL", "R_NN_CH")
+cov.ha.soc.labels <- c("Median income [kCHF]", "Unemployment [%]", "Compulsory education [%]", "Foreign population [%]")
 
 compare_kernels("gaussian", 100, "gaussian", 300, "rectangular", 300)
 
@@ -85,14 +87,16 @@ map_significant_areas(hyp.areas$lrr.poly, dem, basemap_type = "raster", title="H
 
 # Compare individual and neighborhood factors between risk areas
 compare_areas(hyp.areas$lrr.indiv, hyp.areas$lrr.ha, cov.indiv, cov.ha)
-pairwise_violin_plot(hyp.areas$lrr.ha, cov.ha.env, "hypertension", bandwidth = hyp.bandwidth)
-pairwise_violin_plot(hyp.areas$lrr.ha, cov.ha.soc, "hypertension", bandwidth = hyp.bandwidth)
+pairwise_violin_plot(hyp.areas$lrr.ha, cov.ha.env, cov.ha.env.labels, "hypertension", bandwidth = hyp.bandwidth)
+pairwise_violin_plot(hyp.areas$lrr.ha, cov.ha.soc, cov.ha.soc.labels, "hypertension", bandwidth = hyp.bandwidth)
 
 # SIGNIFICANT FACTORS FOR EACH HIGH-RISK AREA
 
 # Check if some areas need to be merged / and removed areas without disease events
 map_high_risk_areas(hyp.areas$lrr.poly, laus$extent, "hypertension", bandwidth = hyp.bandwidth)
 compare_high_risk_area(hyp.areas, cov.indiv, cov.ha, excluded_polys=c(10))
+
+cov.ha.env.labels
 
 sink()
 
@@ -140,8 +144,8 @@ map_significant_areas(obes.areas$lrr.poly, dem, basemap_type = "raster", title="
 
 # Compare individual and neighborhood factors between risk areas
 compare_areas(obes.areas$lrr.indiv, obes.areas$lrr.ha, cov.indiv, cov.ha)
-pairwise_violin_plot(obes.areas$lrr.ha, cov.ha.env, "obesity", bandwidth=obes.bandwidth)
-pairwise_violin_plot(obes.areas$lrr.ha, cov.ha.soc, "obesity", bandwidth = obes.bandwidth)
+pairwise_violin_plot(obes.areas$lrr.ha, cov.ha.env, cov.ha.env.labels, "obesity", bandwidth=obes.bandwidth)
+pairwise_violin_plot(obes.areas$lrr.ha, cov.ha.soc, cov.ha.soc.labels, "obesity", bandwidth = obes.bandwidth)
 
 # SIGNIFICANT FACTORS FOR EACH HIGH-RISK AREA
 
@@ -202,8 +206,8 @@ map_significant_areas(diab.areas$lrr.poly, dem, basemap_type = "raster", title="
 
 # Compare individual and neighborhood factors between risk areas
 compare_areas(diab.areas$lrr.indiv, diab.areas$lrr.ha, cov.indiv, cov.ha)
-pairwise_violin_plot(diab.areas$lrr.ha, cov.ha.env, "diabetes", bandwidth = diab.bandwidth)
-pairwise_violin_plot(diab.areas$lrr.ha, cov.ha.soc, "diabetes", bandwidth = diab.bandwidth)
+pairwise_violin_plot(diab.areas$lrr.ha, cov.ha.env, cov.ha.env.labels, "diabetes", bandwidth = diab.bandwidth)
+pairwise_violin_plot(diab.areas$lrr.ha, cov.ha.soc, cov.ha.soc.labels, "diabetes", bandwidth = diab.bandwidth)
 
 # SIGNIFICANT FACTORS FOR EACH HIGH-RISK AREA
 
@@ -259,8 +263,8 @@ map_significant_areas(dys.areas$lrr.poly, dem, basemap_type = "raster", title="D
 
 # Compare individual and neighborhood factors between risk areas
 compare_areas(dys.areas$lrr.indiv, dys.areas$lrr.ha, cov.indiv, cov.ha)
-pairwise_violin_plot(dys.areas$lrr.ha, cov.ha.env, "dyslipidemia", bandwidth = dys.bandwidth)
-pairwise_violin_plot(dys.areas$lrr.ha, cov.ha.soc, "dyslipidemia", bandwidth = dys.bandwidth)
+pairwise_violin_plot(dys.areas$lrr.ha, cov.ha.env, cov.ha.env.labels, "dyslipidemia", bandwidth = dys.bandwidth)
+pairwise_violin_plot(dys.areas$lrr.ha, cov.ha.soc, cov.ha.soc.labels, "dyslipidemia", bandwidth = dys.bandwidth)
 
 # SIGNIFICANT FACTORS FOR EACH HIGH-RISK AREA
 

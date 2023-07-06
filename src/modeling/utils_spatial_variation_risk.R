@@ -438,7 +438,7 @@ compare_risk_areas <- function(lrr_ha, cov_env){
 }
 
 
-pairwise_violin_plot <- function(lrr_ha, cov_list, outcome_name, bandwidth=NULL){
+pairwise_violin_plot <- function(lrr_ha, cov_list, cov_labels, outcome_name, bandwidth=NULL){
   
   if("NOISE" %in% cov_list){
     filename <- paste0("built_env_characteristics_", outcome_name)
@@ -454,20 +454,21 @@ pairwise_violin_plot <- function(lrr_ha, cov_list, outcome_name, bandwidth=NULL)
   plots <- list()
   
   # Loop through each y parameter and create a plot
-  for (i in cov_list) {
+  for (i in seq_along(cov_list)) {
     plot <- ggbetweenstats(
       lrr_ha,
       x="risk",
-      y=!!sym(i),
+      y=!!sym(cov_list[i]),
       type = "nonparametric",
       pairwise.comparisons = TRUE,
       pairwise.display = "significant",
       p.adjust.method = "bonferroni",
       xlab = "",
+      ylab = cov_labels[i],
       k=2,
       results.subtitle=TRUE,
       centrality.label.args = list(size  = 5),
-      ggplot.component = list(scale_color_manual(values = c("#F8766D", "#00BFC4", "grey"))) 
+      ggplot.component = list(scale_color_manual(values = c("#F8766D", "#00BFC4", "grey"))),
     ) +
       theme(text = element_text(size = 16),
             plot.subtitle = element_text(size = 12), 
