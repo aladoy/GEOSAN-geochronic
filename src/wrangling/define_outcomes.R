@@ -2,7 +2,7 @@
 
 library(sf)
 library(tidyverse)
-require(RPostgreSQL)
+library(RPostgreSQL)
 
 setwd("/mnt/data/GEOSAN/RESEARCH PROJECTS/GEOCHRONIC @ LASIG (EPFL)/GEOSAN-geochronic/src/")
 
@@ -10,9 +10,11 @@ source('/mnt/data/GEOSAN/FUNCTIONS/GIRAPH-functions/geosan_funcs/password_utils.
 source('wrangling/utils_define_outcomes.R')
 
 
-#con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",askForPassword(),dbname="geosan")
- con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",rstudioapi::askForPassword(),dbname="geosan")
+con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",askForPassword(),dbname="geosan")
+# con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",rstudioapi::askForPassword(),dbname="geosan")
 
+
+study_area <- read_sf(con, query="SELECT * FROM lausanne_sectors_extent")
 
 
 # FUNCTIONS ---------------------------------------------------------------
@@ -247,6 +249,10 @@ for (period in periods){
   data.outcomes <- data %>% dplyr::select(pt, all_of(outcomes.all))
   
   lapply(outcomes.all, print_final_stats, data=data, file_res=f)
+  
+  write("\nSUMMARY FOR LAUSANNE AREA ONLY\n", file_res=f)
+  data_laus <- filter(data, st_intersects(geometry, study_area, sparse = FALSE)[,1])
+  lapply(outcomes.all, print_final_stats, data=data_laus, file_res=f)
   
   write(paste("Number of participants having a missing outcome: (which should be removed for an eligible dataset):", data.outcomes %>% filter_all(any_vars(is.na(.))) %>% nrow()), f)
   

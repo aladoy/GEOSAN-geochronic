@@ -50,11 +50,13 @@ print_final_stats <- function(var, data=data, file_res=file_res){
   
   n = subset %>% nrow()
   cases <- subset %>% filter(!!as.name(var)==1) %>% nrow()
+  controls <- subset %>% filter(!!as.name(var)==0) %>% nrow()
   nan <- subset %>% filter(is.nan(!!as.name(var))) %>% nrow()
   
   write("", file_res)
   write(paste("Statistics for", str_to_upper(var)), file_res)
   print(paste("Cases:", cases, "(", round(100*(cases/n),2), "%)")) %>% capture(file_res)
+  print(paste("Controls:", controls, "(", round(100*(controls/n),2), "%)")) %>% capture(file_res)
   print(paste("Missing values:", nan, "(", round(100*(nan/n),2), "%)")) %>% capture(file_res)
   
 }

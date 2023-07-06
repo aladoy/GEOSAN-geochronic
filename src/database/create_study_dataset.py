@@ -34,7 +34,7 @@ def create_study_dataset(extent="vaud"):
         os.sep.join(
             [
                 project_dir,
-                "processed_data/f2_adjusted_outcomes.gpkg",
+                "processed_data/f2_outcomes.gpkg",
             ]
         ),
         driver="GPKG")
