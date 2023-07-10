@@ -129,9 +129,6 @@ def main():
     indicators = pd.merge(ha, statpop, on="RELI", how="inner")
     indicators = pd.merge(indicators, environment, on="RELI", how="inner")
 
-    # Remove hectares with less than 3 inhabitants
-    indicators = indicators[indicators.PTOT > 3]
-
     print("Number of hectares with data: ", indicators.shape[0])
 
     # SAVE INDICATORS TO FILE

@@ -8,8 +8,8 @@ source('/mnt/data/GEOSAN/FUNCTIONS/GIRAPH-functions/geosan_funcs/password_utils.
 
 setwd("/mnt/data/GEOSAN/RESEARCH PROJECTS/GEOCHRONIC @ LASIG (EPFL)/GEOSAN-geochronic/src/")
 
-# con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",askForPassword(),dbname="geosan")
-con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",rstudioapi::askForPassword(),dbname="geosan")
+con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",askForPassword(),dbname="geosan")
+# con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",rstudioapi::askForPassword(),dbname="geosan")
 
 # FUNCTIONS ---------------------------------------------------------------
 
@@ -53,6 +53,24 @@ comp_categorical <- function(vector1, vector2, var_name){
   
 }
 
+# Same function used in define_outcomes.R
+print_final_stats <- function(var, data=data){
+  
+  subset <- data %>% st_drop_geometry() %>% dplyr::select(pt, !!as.name(var))
+  
+  n = subset %>% nrow()
+  cases <- subset %>% filter(!!as.name(var)==1) %>% nrow()
+  controls <- subset %>% filter(!!as.name(var)==0) %>% nrow()
+  nan <- subset %>% filter(is.na(!!as.name(var))) %>% nrow()
+  
+  write("")
+  write(paste("Statistics for", str_to_upper(var)))
+  print(paste("Cases:", cases, "(", round(100*(cases/n),2), "%)")) %>% capture()
+  print(paste("Controls:", controls, "(", round(100*(controls/n),2), "%)")) %>% capture()
+  print(paste("Missing values:", nan, "(", round(100*(nan/n),2), "%)")) %>% capture()
+  
+}
+
 
 # Extract participants ----------------------------------------------------
 
@@ -62,9 +80,9 @@ cat(paste0("Date:", Sys.Date(),'\n'), file = file_res, append = FALSE) #Overwrit
 
 indiv.b <- st_read("../processed_data/b_indiv_covariates.gpkg")
 
-indiv.f2 <- read_sf(con, query="SELECT * FROM geochronic.f2_study_dataset_lausanne") # including sex, age, etc. from colaus_baseline
+indiv.f2.all <- read_sf(con, query="SELECT * FROM geochronic.f2_study_dataset_lausanne") # including sex, age, etc. from colaus_baseline
 
-indiv.f2.outside <- st_read("../processed_data/f2_indiv_covariates.gpkg") %>% filter(!pt %in% indiv.f2$pt)
+indiv.f2.outside <- st_read("../processed_data/f2_indiv_covariates.gpkg") %>% filter(!pt %in% indiv.f2.all$pt)
 
 
 # Characteristics of participants -----------------------------------------
@@ -92,7 +110,7 @@ write("\n--------------")
 write("FOLLOW-UP 2")
 write("--------------")
 
-indiv.f2 <- indiv.f2 %>% select(pt, f2datexam, all_of(cov))
+indiv.f2 <- indiv.f2.all %>% select(pt, f2datexam, all_of(cov))
 
 cov.f2.fact <- cov[! cov %in% c("age", "income")]
 indiv.f2 <- indiv.f2 %>% mutate_at(cov.f2.fact, as.factor)
@@ -103,10 +121,13 @@ write(paste("Min / Max age:", min(indiv.f2$age), "/", max(indiv.f2$age)))
 
 lapply(cov, covariate_stats, df=indiv.f2)
 
+write("OUTCOMES")
+outcomes.all <- c("hypertension", "obesity", "diabetes", "dyslipidemia")
+lapply(outcomes.all, print_final_stats, data=indiv.f2.all)
 
 
 write("\n--------------")
-write("FOLLOW-UP 2 - IN / OUTSIDE STUDY AREA")
+write("FOLLOW-UP 2 - EXCLUDED POP")
 write("--------------")
 
 cov.f2.out.fact <- cov[! cov %in% c("age", "income")]

@@ -123,7 +123,7 @@ def create_study_dataset(extent="vaud"):
 
     res_info = pd.read_sql(
         "SELECT * FROM geochronic.ha_characteristics", conn)
-    print("Number of indiividuals with missing neighborhood characteristics: " +
+    print("Number of individuals with missing neighborhood characteristics: " +
           str(f2_study_dataset[~f2_study_dataset.reli.isin(res_info.reli)].shape[0]) + " (" + str(round(100*f2_study_dataset[~f2_study_dataset.reli.isin(res_info.reli)].shape[0]/size, 2)) + "%)")
 
     f2_study_dataset = f2_study_dataset[f2_study_dataset.reli.isin(
