@@ -17,8 +17,6 @@ except FileNotFoundError:
     print("Wrong file or file path")
 
 project_dir: str = r"/mnt/data/GEOSAN/RESEARCH PROJECTS/GEOCHRONIC @ LASIG (EPFL)/GEOSAN-geochronic/"
-ces_dir: str = (
-    r"/mnt/data/GEOSAN/RESEARCH PROJECTS/COMMUNE EN SANTE @ UNISANTE/commune-en-sante")
 data_dir: str = r"/mnt/data/GEOSAN/GEOSAN DB/data"
 
 
@@ -55,9 +53,9 @@ def main():
     statpop.iloc[:, 6:] = statpop.iloc[:, 6:].apply(
         compute_ratio_demo, arg=statpop.PTOT)
 
-    # HA INDICATORS FROM COMMUNE EN SANTE (ALREADY FILTERED PTOT > 3)
+    # HA INDICATORS FROM COMMUNE EN SANTE
     ha = gpd.read_postgis(
-        "SELECT reli, e_koord, n_koord, mun_index, noise, geometry FROM ha_indicators WHERE ST_Intersects(geometry, (SELECT geometry FROM lausanne_sectors_extent))", conn, geom_col="geometry")
+        "SELECT reli, e_koord, n_koord, geometry FROM vd_reli_polygon WHERE ST_Intersects(geometry, (SELECT geometry FROM lausanne_sectors_extent))", conn, geom_col="geometry")
 
     print("Number of hectares in Lausanne: ", ha.shape[0])
 
@@ -113,30 +111,26 @@ def main():
                    "geometry" else col for col in ha.columns]
     ha.columns = new_columns
 
-    # AIR POLLUTION
-    pm25 = extract_airpol("PM25")
-    pm10 = extract_airpol("PM10")
-    no2 = extract_airpol("NO2")
 
-    # WALKABILITY
-    walkability = gpd.read_file(
+    # ENVIRONMENT
+    environment = gpd.read_file(
         os.sep.join(
             [
                 project_dir,
-                "processed_data/walkability_measures.gpkg"
+                "processed_data/environmental_measures.gpkg"
             ]
         ),
         driver="GPKG",
     )
-    walkability = walkability.rename(
+    environment = environment.rename(
         columns=lambda x: x.upper()).drop("GEOMETRY", axis=1)
 
     # CONCATENATE ALL VARIABLES IN A SINGLE INDEX
     indicators = pd.merge(ha, statpop, on="RELI", how="inner")
-    indicators = pd.merge(indicators, pm25, on="RELI", how="inner")
-    indicators = pd.merge(indicators, pm10, on="RELI", how="inner")
-    indicators = pd.merge(indicators, no2, on="RELI", how="inner")
-    indicators = pd.merge(indicators, walkability, on="RELI", how="inner")
+    indicators = pd.merge(indicators, environment, on="RELI", how="inner")
+
+    # Remove hectares with less than 3 inhabitants
+    indicators = indicators[indicators.PTOT > 3]
 
     print("Number of hectares with data: ", indicators.shape[0])
 
@@ -156,23 +150,6 @@ def compute_ratio_demo(var, arg):
     return ratio
 
 
-def extract_airpol(var_name):
-    filename = var_name + ".gpkg"
-    df = gpd.read_file(
-        os.sep.join(
-            [
-                ces_dir,
-                "processed_data/environmental_exposures/airpol_2015/" + filename,
-            ]
-        ),
-        driver="GPKG",
-    )
-    df = df[["reli", "mean"]]
-    df = df[~df["mean"].isna()]
-    df.columns = ["RELI", var_name.upper()]
-    return df
-
-
 def calculate_weighted_avg(reli, df, var, type="surface"):
 
     # Filter the DataFrame based on the target RELI value
@@ -182,16 +159,20 @@ def calculate_weighted_avg(reli, df, var, type="surface"):
         # Calculate the total count of polygons
         total_count = filtered_df.shape[0]
 
-        # Calculate the weighted mean by polygon count
         weighted_mean = filtered_df[var].sum() / total_count
 
     elif type == "surface":
         # Calculate the total area of all polygons
         total_area = filtered_df['geometry'].area.sum()
 
-        # Calculate the weighted mean by surface area
-        weighted_mean = (
-            filtered_df[var] * filtered_df['geometry'].area).sum() / total_area
+        if total_area == 0:
+
+            weighted_mean = 0
+
+        else:
+
+            weighted_mean = (
+                filtered_df[var] * filtered_df['geometry'].area).sum() / total_area
     else:
         raise ValueError(
             "Invalid type value. Please choose either 'count' or 'surface'.")
