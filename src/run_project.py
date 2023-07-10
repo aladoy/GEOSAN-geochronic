@@ -13,6 +13,7 @@ def main():
     subdir_db = "database"
     subdir_wrang = "wrangling"
     subdir_descr = "descriptive"
+    subdir_model = "modeling"
 
     # # Import dataset to DB
     # execute_code(subdir_wrang, "re_geocode_colaus.py")
@@ -22,22 +23,40 @@ def main():
     # execute_code(subdir_db, "create_materialized_views.sh", interpreter='sh')
     # execute_code(subdir_db, "comment_tables.sh", interpreter='sh')
 
-    # # # Add residential information
-    # execute_code(subdir_wrang, "assign_to_reli.py")
-    # execute_code(subdir_wrang, "build_residential_history.py")
-
-    # Define neighborhood (ha) characteristics
-    execute_code(subdir_wrang, "build_ha_characteristics.py")
-
-    # # Define outcomes and covariates
+    # # Define outcomes and covariates (for Follow-up 2 initial data -> colaus_f2)
     # execute_code(subdir_wrang, "define_outcomes.R", interpreter='Rscript')
     # execute_code(subdir_wrang, "define_indiv_covariates.R",
     #              interpreter='Rscript')
-    # execute_code(subdir_db, "create_study_dataset.py")
 
-    # # ESDA
-    # execute_code(subdir_descr, "describe_participants.R",
+    # # Add residential information (for Follow-up 2 data in Vaud only -> f2_geo_vaud)
+    # execute_code(subdir_wrang, "assign_to_reli.py")
+    # execute_code(subdir_wrang, "build_residential_history.py")
+    
+    # # Define neighborhood (ha) characteristics
+    # execute_code(subdir_wrang, "build_ha_characteristics.py")
+    # execute_code(subdir_descr, "map_indicators.R",
     #              interpreter='Rscript')
+
+    # execute_code(subdir_db, "create_study_dataset.py")
+    
+    # ESDA
+    execute_code(subdir_descr, "describe_participants.R",
+                 interpreter='Rscript')
+
+    # # Spatial variation of risk
+    # execute_code(subdir_model, "spatial_variation_risk_baseline.R",
+    #              interpreter='Rscript')
+    # execute_code(subdir_model, "spatial_variation_risk_F1.R",
+    #              interpreter='Rscript')
+    # execute_code(subdir_model, "spatial_variation_risk_F2.R",
+    #              interpreter='Rscript')
+
+    # # Spatial modeling
+    # execute_code(subdir_model, "confounders_adjustment.R",
+    #              interpreter='Rscript')
+    # execute_code(subdir_model, "ols.R",
+    #              interpreter='Rscript')
+    # execute_code(subdir_model, "mgwr.py")
 
 
 def execute_code(program_subdir, program_name, interpreter="python"):

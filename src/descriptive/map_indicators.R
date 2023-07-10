@@ -6,10 +6,11 @@ require(classInt)
 require(ggspatial)
 require(RPostgreSQL)
 require(corrplot)
-require(car)
 
+source('/mnt/data/GEOSAN/FUNCTIONS/GIRAPH-functions/geosan_funcs/password_utils.R')
 setwd("/mnt/data/GEOSAN/RESEARCH PROJECTS/GEOCHRONIC @ LASIG (EPFL)/GEOSAN-geochronic/src/")
 
+# con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",askForPassword(),dbname="geosan")
 con <- dbConnect(drv=RPostgreSQL::PostgreSQL(),host = "localhost",user= "aladoy",rstudioapi::askForPassword(),dbname="geosan")
 
 ha <- read_sf(con, query="SELECT reli, INTDEN, GREEN_SP, NOISE, PM25, NO2, MEDREV, R_UNEMP, R_NN_POBL, R_NN_CH, geometry FROM geochronic.ha_characteristics WHERE st_intersects(geometry, (SELECT geometry FROM lausanne_sectors_extent))")
