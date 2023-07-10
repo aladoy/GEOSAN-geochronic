@@ -116,21 +116,7 @@ plot_cov_distribution <- function(data, outcome, continous_cov){
 }
 
 
-# PRINT MODEL SUMMARY (estimates, p-values, OR, confidence intervals)
-#   type can be "gam" or "glm"
-print_model_summary <- function(model, type="glm"){
-  
-  print(summary(model))
-  mcfadden(model)
-  
-  if(type=="glm"){
-    print(exp(cbind(OR = coef(model), confint(model))))
-  }else{
-    print(exp(OR = coef(model)))
-  }
-  
-  
-}
+
 
 
 # Return the invesrse logit. For a given log-odd, it returns the probability of having a disease. Rounded at 2-decimals.
@@ -142,20 +128,7 @@ inverse_logit <- function(log_odd){
 }
 
 
-# COMPUTE THE McFADDEN CRITERIA (OR LIKELIHOOD RATIO TEST).
-#   determine the quality of the logistic regression model.
-#   generally, a score (R2) > 0.2 is considered a good fit for a logistic regression model.
-mcfadden <- function(model){
-  
-  ll.null <- model$null.deviance/-2
-  ll.proposed <- model$deviance/-2
-  score <- round((ll.null-ll.proposed)/ll.null, 5)
-  
-  # print(paste("Overall effect size of the model=", (ll.null-ll.proposed)/ll.null))
-  # print(paste("P-value=", 1-pchisq(2*(ll.proposed-ll.null), df=(length(model$coefficients)-1))))
-  cat(paste("McFadden criteria (Likelihood ratio test):",
-            score, "\n"))
-}
+
 
 
 # RUN STEPWISE REGRESSION
@@ -198,17 +171,6 @@ draw_predicted_prob <- function(model, data, outcome_name){
 # }
 
 
-compare_models <- function(m1, m2){
-  
-  # AIC - should be minimized
-  print(paste0("AIC: Model 1 (", round(AIC(m1),5), "), Model 2 (", round(AIC(m2),5), ")"))
-  
-  # McFadden's Pseudo-R2 - should be maximized
-  print(paste0("McFadden's Pseudo-R2: Model 1 (", mcfadden(m1), "), Model 2 (", mcfadden(m2), ")"))
-  
-  # Chi-Square test - should be significative
-  anova(m1, m2, test="Chisq")
-}
 
 
 # EMPTY MULTILEVEL

@@ -94,9 +94,7 @@ pairwise_violin_plot(hyp.areas$lrr.ha, cov.ha.soc, cov.ha.soc.labels, "hypertens
 
 # Check if some areas need to be merged / and removed areas without disease events
 map_high_risk_areas(hyp.areas$lrr.poly, laus$extent, "hypertension", bandwidth = hyp.bandwidth)
-compare_high_risk_area(hyp.areas, cov.indiv, cov.ha, excluded_polys=c(10))
-
-cov.ha.env.labels
+compare_high_risk_area(hyp.areas, cov.indiv, cov.ha, excluded_polys=c(9, 10))
 
 sink()
 
@@ -152,7 +150,7 @@ pairwise_violin_plot(obes.areas$lrr.ha, cov.ha.soc, cov.ha.soc.labels, "obesity"
 # Check if some areas need to be merged
 map_high_risk_areas(obes.areas$lrr.poly, laus$extent, "obesity", bandwidth = obes.bandwidth)
 
-compare_high_risk_area(obes.areas, cov.indiv, cov.ha, excluded_polys = c(18))
+compare_high_risk_area(obes.areas, cov.indiv, cov.ha, excluded_polys = c(16))
 
 sink()
 
@@ -214,7 +212,8 @@ pairwise_violin_plot(diab.areas$lrr.ha, cov.ha.soc, cov.ha.soc.labels, "diabetes
 # Check if some areas need to be merged
 map_high_risk_areas(diab.areas$lrr.poly, laus$extent, "diabetes", bandwidth = diab.bandwidth)
 
-compare_high_risk_area(diab.areas, cov.indiv, cov.ha, excluded_polys = c(13,15,10))
+compare_high_risk_area(diab.areas, cov.indiv, cov.ha, excluded_polys = c(13))
+
 
 sink()
 
@@ -272,7 +271,8 @@ pairwise_violin_plot(dys.areas$lrr.ha, cov.ha.soc, cov.ha.soc.labels, "dyslipide
 map_high_risk_areas(dys.areas$lrr.poly, laus$extent, "dyslipidemia", bandwidth = dys.bandwidth)
 
 
-compare_high_risk_area(dys.areas, cov.indiv, cov.ha, excluded_polys = c(11,18))
+# compare_high_risk_area(dys.areas, cov.indiv, cov.ha, excluded_polys = c(11,18))
+compare_high_risk_area(dys.areas, cov.indiv, cov.ha, excluded_polys = c(13))
 
 
 sink()
