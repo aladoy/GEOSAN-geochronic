@@ -32,7 +32,8 @@ def main():
     # execute_code(subdir_wrang, "assign_to_reli.py")
     # execute_code(subdir_wrang, "build_residential_history.py")
     
-    # # Define neighborhood (ha) characteristics
+    # Define neighborhood (ha) characteristics
+    # execute_code(subdir_wrang, "compute_env_exposures.py")
     # execute_code(subdir_wrang, "build_ha_characteristics.py")
     # execute_code(subdir_descr, "map_indicators.R",
     #              interpreter='Rscript')

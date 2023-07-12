@@ -76,7 +76,7 @@ cov <- c("INTDEN", "GREEN_SP", "NOISE", "PM25", "NO2", "MEDREV", "R_UNEMP", "R_N
 
 choropleth_map(ha, "INTDEN", "Intersection Density (-)", "Street connectivity within a 500-meters radius buffer")
 choropleth_map(ha, "GREEN_SP", "Greenness (%)", "Proportion of green spaces within a 500-meters radius buffer")
-choropleth_map(ha, "NOISE", "Noise (dB)", "Nighttime Noise Exposure from Roadway and Railway Sources")
+choropleth_map(ha, "NOISE", "Noise (dB)", "Nihgttime Noise Exposure from Roadway and Railway Sources")
 choropleth_map(ha, "PM25", "Concentration (ug/m3)", "Exposure to fine particulate matter PM2.5")
 choropleth_map(ha, "NO2", "Concentration (ug/m3)", "Exposure to nitrogen dioxide (NO2)")
 choropleth_map(ha, "MEDREV", "Income (kCHF)", "Median annual income per household")
