@@ -3,6 +3,9 @@ import os
 from shapely.geometry import Point
 import geopandas as gpd
 import pandas as pd
+import rasterio
+from rasterstats import zonal_stats
+import numpy as np
 
 
 sys.path.append(r"/mnt/data/GEOSAN/FUNCTIONS/GIRAPH-functions/")
@@ -28,58 +31,44 @@ def main():
         "SELECT reli, geometry FROM vd_reli_polygon", conn, geom_col="geometry")
     
     # Buffer of 500m around each hectare's centroid
-    ha_buff = gpd.read_postgis("SELECT reli as reli_buff, ST_Buffer(ST_Centroid(geometry),500) as geometry FROM vd_reli_polygon r WHERE ST_Intersects(geometry, (SELECT geometry FROM lausanne_sectors_extent))", conn, geom_col="geometry")
+    ha_buff = gpd.read_postgis("SELECT reli, ST_Buffer(ST_Centroid(geometry),500) as geometry FROM vd_reli_polygon r WHERE ST_Intersects(geometry, (SELECT geometry FROM lausanne_sectors_extent))", conn, geom_col="geometry")
     ha_buff["area_buff"] = ha_buff.geometry.area
+
 
     # HA - LAUSANNE EXTENT
     ha = gpd.read_postgis("SELECT reli, geometry FROM vd_reli_polygon r WHERE ST_Intersects(geometry, (SELECT geometry FROM lausanne_sectors_extent))", conn, geom_col="geometry")
-    
 
-    # ha_buff.to_file("aaaa_buff.gpkg")
-
-    # intersection = gpd.overlay(ha, ha_buff[["geometry"]], how='intersection')
-    # intersection['weighted_noise'] = intersection['noise'] * (intersection.geometry.area / intersection['area_buff'])
-    # intersection[intersection.reli_2==53461529].to_file("aaaaa_inter.gpkg")
-    
-    # noise_avg=calculate_weighted_avg(53461529, intersection, "noise", type="surface")
-    # noise_avg=calculate_weighted_avg(53461529, intersection, "noise", type="count")
-    # intersection.noise.mean()
-
-    # intersection[intersection.reli==53461529].noise.mean()
 
     # NOISE AND AIR POLLUTION
 
-    noise = extract_env_exposure("NOISE")
-    pm25 = extract_env_exposure("PM25")
-    pm10 = extract_env_exposure("PM10")
-    no2 = extract_env_exposure("NO2")
+    pm25_path = os.sep.join([geosan_db_dir, "AIR POLLUTION SWITZERLAND/pm25/pm25_2015/pm25_2015.tif"])
+    pm25 = get_airpol_value(pm25_path, ha_buff)[["reli", "mean"]]
+    pm25.columns = ["reli", "PM25"]
+    ha_environment = ha.merge(
+        pm25[["reli", "PM25"]], how="left", on="reli")
 
-    ha_vd = pd.merge(ha_vd, noise, on="reli", how="left")
-    ha_vd = pd.merge(ha_vd, pm25, on="reli", how="left")
-    ha_vd = pd.merge(ha_vd, pm10, on="reli", how="left")
-    ha_vd = pd.merge(ha_vd, no2, on="reli", how="left")
+    no2_path = os.sep.join([geosan_db_dir, "AIR POLLUTION SWITZERLAND/no2/no2_2015/no2_2015.tif"])
+    no2 = get_airpol_value(no2_path, ha_buff)[["reli", "mean"]]
+    no2.columns = ["reli", "NO2"]
+    ha_environment = ha_environment.merge(
+        no2[["reli", "NO2"]], how="left", on="reli")
 
-    # Intersection between hectares (VD) and buffers
-    ha_within_buffers = gpd.overlay(ha_buff, ha_vd, how='intersection')
-
-    # Compute the mean values weighted by surface within the buffer
-    for index, row in ha.iterrows():
-        
-        noise_avg = calculate_weighted_avg(row.reli, ha_within_buffers, "NOISE")
-        ha.at[index, 'NOISE'] = noise_avg
-
-        pm25_avg = calculate_weighted_avg(row.reli, ha_within_buffers, "PM25")
-        ha.at[index, 'PM25'] = pm25_avg
-
-        pm10_avg = calculate_weighted_avg(row.reli, ha_within_buffers, "PM10")
-        ha.at[index, 'PM10'] = pm10_avg
-
-        no2_avg = calculate_weighted_avg(row.reli, ha_within_buffers, "NO2")
-        ha.at[index, 'NO2'] = no2_avg
-
-    # Rename ha_buff columns from reli_buff to reli for next steps
-    ha_buff.columns = ["reli", "geometry", "area_buff"]
-
+    noise = zonal_stats(
+        ha_buff,
+        os.sep.join(
+            [
+                ces_dir,
+                "processed_data/environmental_exposures/total_night_noise_vd.tif",
+            ]
+        ),
+        band_num=1,
+        nodata=255,
+        geojson_out=True,
+    )
+    noise = gpd.GeoDataFrame.from_features(noise, crs=2056)[["reli", "mean"]]
+    noise.columns = ["reli", "NOISE"]
+    ha_environment = ha_environment.merge(
+        noise[["reli", "NOISE"]], how="left", on="reli")
 
     # GREENSPACES
 
@@ -97,7 +86,7 @@ def main():
         lambda x: compute_area(x, ha_buff, greenspace, intersect_greenspace)
     )
 
-    ha_environment = ha.merge(
+    ha_environment = ha_environment.merge(
         ha_buff[["reli", "green_sp"]], how="left", on="reli")
 
     
@@ -133,20 +122,20 @@ def main():
 
 
 
-# Almost same function than build_ha_characteristics.py
-def calculate_weighted_avg(reli, df, var):
+# # Almost same function than build_ha_characteristics.py
+# def calculate_weighted_avg(reli, df, var):
 
-    # Filter the DataFrame based on the target RELI value
-    filtered_df = df[df['reli_buff'] == reli]
+#     # Filter the DataFrame based on the target RELI value
+#     filtered_df = df[df['reli_buff'] == reli]
 
-    # Calculate the total area of all polygons
-    total_area = filtered_df['geometry'].area.sum()
+#     # Calculate the total area of all polygons
+#     total_area = filtered_df['geometry'].area.sum()
 
-    # Calculate the weighted mean by surface area
-    weighted_mean = (
-        filtered_df[var] * filtered_df['geometry'].area).sum() / total_area
+#     # Calculate the weighted mean by surface area
+#     weighted_mean = (
+#         filtered_df[var] * filtered_df['geometry'].area).sum() / total_area
 
-    return weighted_mean
+#     return weighted_mean
 
 
 
@@ -180,35 +169,57 @@ def compute_area(reli, ha_buff, landcov_df, joined_df):
     return perc_landcov
 
 
-def extract_env_exposure(var_name):
+# def extract_env_exposure(var_name):
 
-    if var_name=="NOISE":
+#     if var_name=="NOISE":
 
-        df = gpd.read_file(
-            os.sep.join(
-                [ces_dir, 
-                "processed_data/environmental_exposures/total_night_noise_vd.gpkg"]
-                ),
-                driver="GPKG",
-                )
+#         df = gpd.read_file(
+#             os.sep.join(
+#                 [ces_dir, 
+#                 "processed_data/environmental_exposures/total_night_noise_vd.gpkg"]
+#                 ),
+#                 driver="GPKG",
+#                 )
 
-    else:
+#     else:
 
-        filename = var_name + ".gpkg"
-        df = gpd.read_file(
-            os.sep.join(
-                [
-                    ces_dir,
-                    "processed_data/environmental_exposures/airpol_2015/" + filename,
-                ]
-            ),
-            driver="GPKG",
-        )
+#         filename = var_name + ".gpkg"
+#         df = gpd.read_file(
+#             os.sep.join(
+#                 [
+#                     ces_dir,
+#                     "processed_data/environmental_exposures/airpol_2015/" + filename,
+#                 ]
+#             ),
+#             driver="GPKG",
+#         )
 
-    df = df[["reli", "mean"]]
-    df = df[~df["mean"].isna()]
-    df.columns = ["reli", var_name]
-    return df
+#     df = df[["reli", "mean"]]
+#     df = df[~df["mean"].isna()]
+#     df.columns = ["reli", var_name]
+#     return df
+
+
+def get_airpol_value(raster_path, vector):
+
+    raster = rasterio.open(raster_path)
+    print("no data value (will be converted to 255): ", raster.nodata)
+    filter_arr = raster.read() < raster.nodata
+    max_value = raster.read()[filter_arr].max()
+    print("max value (used to filter nodata at the end): ", max_value)
+
+    stats = zonal_stats(vector, raster_path, band_num=1, nodata=255, geojson_out=True)
+
+    geostats = gpd.GeoDataFrame.from_features(stats, crs=2056)
+    # the data provider forgot to delimitate decimals
+    geostats.loc[:, ["min", "max", "mean"]] = (
+        geostats.loc[:, ["min", "max", "mean"]] / 10
+    )
+
+    geostats.loc[geostats["max"] * 10 > max_value, "mean"] = np.nan
+    geostats.loc[geostats["max"] * 10 == raster.nodata, "max"] = np.nan
+
+    return geostats
 
 
 
