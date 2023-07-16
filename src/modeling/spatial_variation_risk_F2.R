@@ -32,8 +32,8 @@ dem <- raster("/mnt/data/GEOSAN/GEOSAN DB/data/MODELE NUMERIQUE HAUTEUR LAUSANNE
 cov.indiv <- c("age", "sex", "swiss", "cohabiting", "education", "working", "difficulties", "smoking", "drinking", "inactivity")
 cov.ha <- c("PTOT", "INTDEN", "GREEN_SP", "NOISE", "PM25", "NO2", "MEDREV", "R_UNEMP", "R_NN_POBL", "R_NN_CH")
 
-cov.ha.env <- c("INTDEN", "GREEN_SP", "NOISE", "PM25")
-cov.ha.env.labels <- c("Intersection density [-]", "Greenness [%]", "Nighttime traffic noise [dB]", "PM2.5 exposure [ug/m3]")
+cov.ha.env <- c("INTDEN", "GREEN_SP", "NOISE", "PM25", "NO2")
+cov.ha.env.labels <- c("Street connectivity [-]", "Greenness [%]", "Nighttime traffic noise [dB]", "PM2.5 exposure [ug/m3]", "NO2 exposure [ug/m3]")
 cov.ha.soc <- c("MEDREV", "R_UNEMP", "R_NN_POBL", "R_NN_CH")
 cov.ha.soc.labels <- c("Median income [kCHF]", "Unemployment [%]", "Compulsory education [%]", "Foreign population [%]")
 
@@ -75,7 +75,6 @@ global_clustering(hyp.lrr$smacpod_risk)
 # Save rasters to create maps in QGIS
 save_raster_lrr(hyp.lrr, "hypertension", hyp.bandwidth)
 
-
 # SIGNIFICANT FACTORS BETWEEN HIGH-RISK, LOW-RISK, NOT SIGNIFICANT AREAS
 
 # Extract data for risk areas
@@ -87,6 +86,7 @@ map_significant_areas(hyp.areas$lrr.poly, dem, basemap_type = "raster", title="H
 
 # Compare individual and neighborhood factors between risk areas
 compare_areas(hyp.areas$lrr.indiv, hyp.areas$lrr.ha, cov.indiv, cov.ha)
+# load("../results/spatial_disease_risk/hypertension/hyp_areas.RData")
 pairwise_violin_plot(hyp.areas$lrr.ha, cov.ha.env, cov.ha.env.labels, "hypertension", bandwidth = hyp.bandwidth)
 pairwise_violin_plot(hyp.areas$lrr.ha, cov.ha.soc, cov.ha.soc.labels, "hypertension", bandwidth = hyp.bandwidth)
 
@@ -95,6 +95,9 @@ pairwise_violin_plot(hyp.areas$lrr.ha, cov.ha.soc, cov.ha.soc.labels, "hypertens
 # Check if some areas need to be merged / and removed areas without disease events
 map_high_risk_areas(hyp.areas$lrr.poly, laus$extent, "hypertension", bandwidth = hyp.bandwidth)
 compare_high_risk_area(hyp.areas, cov.indiv, cov.ha, excluded_polys=c(9, 10))
+
+# Save areas to .Rdata
+save(hyp.areas, file = "../results/spatial_disease_risk/hypertension/f2/hyp_areas.RData")
 
 sink()
 
@@ -142,6 +145,7 @@ map_significant_areas(obes.areas$lrr.poly, dem, basemap_type = "raster", title="
 
 # Compare individual and neighborhood factors between risk areas
 compare_areas(obes.areas$lrr.indiv, obes.areas$lrr.ha, cov.indiv, cov.ha)
+# load(obes.areas, file = "../results/spatial_disease_risk/obesity/f2/obes_areas.RData")
 pairwise_violin_plot(obes.areas$lrr.ha, cov.ha.env, cov.ha.env.labels, "obesity", bandwidth=obes.bandwidth)
 pairwise_violin_plot(obes.areas$lrr.ha, cov.ha.soc, cov.ha.soc.labels, "obesity", bandwidth = obes.bandwidth)
 
@@ -151,6 +155,8 @@ pairwise_violin_plot(obes.areas$lrr.ha, cov.ha.soc, cov.ha.soc.labels, "obesity"
 map_high_risk_areas(obes.areas$lrr.poly, laus$extent, "obesity", bandwidth = obes.bandwidth)
 
 compare_high_risk_area(obes.areas, cov.indiv, cov.ha, excluded_polys = c(16))
+
+save(obes.areas, file = "../results/spatial_disease_risk/obesity/f2/obes_areas.RData")
 
 sink()
 
@@ -204,6 +210,7 @@ map_significant_areas(diab.areas$lrr.poly, dem, basemap_type = "raster", title="
 
 # Compare individual and neighborhood factors between risk areas
 compare_areas(diab.areas$lrr.indiv, diab.areas$lrr.ha, cov.indiv, cov.ha)
+# load(diab.areas, file = "../results/spatial_disease_risk/diabetes/f2/diab_areas.RData")
 pairwise_violin_plot(diab.areas$lrr.ha, cov.ha.env, cov.ha.env.labels, "diabetes", bandwidth = diab.bandwidth)
 pairwise_violin_plot(diab.areas$lrr.ha, cov.ha.soc, cov.ha.soc.labels, "diabetes", bandwidth = diab.bandwidth)
 
@@ -214,6 +221,7 @@ map_high_risk_areas(diab.areas$lrr.poly, laus$extent, "diabetes", bandwidth = di
 
 compare_high_risk_area(diab.areas, cov.indiv, cov.ha, excluded_polys = c(13))
 
+save(diab.areas, file = "../results/spatial_disease_risk/diabetes/f2/diab_areas.RData")
 
 sink()
 
@@ -262,6 +270,7 @@ map_significant_areas(dys.areas$lrr.poly, dem, basemap_type = "raster", title="D
 
 # Compare individual and neighborhood factors between risk areas
 compare_areas(dys.areas$lrr.indiv, dys.areas$lrr.ha, cov.indiv, cov.ha)
+# load(dys.areas, file = "../results/spatial_disease_risk/dyslipidemia/f2/dys_areas.RData")
 pairwise_violin_plot(dys.areas$lrr.ha, cov.ha.env, cov.ha.env.labels, "dyslipidemia", bandwidth = dys.bandwidth)
 pairwise_violin_plot(dys.areas$lrr.ha, cov.ha.soc, cov.ha.soc.labels, "dyslipidemia", bandwidth = dys.bandwidth)
 
@@ -274,6 +283,7 @@ map_high_risk_areas(dys.areas$lrr.poly, laus$extent, "dyslipidemia", bandwidth =
 # compare_high_risk_area(dys.areas, cov.indiv, cov.ha, excluded_polys = c(11,18))
 compare_high_risk_area(dys.areas, cov.indiv, cov.ha, excluded_polys = c(13))
 
+save(dys.areas, file = "../results/spatial_disease_risk/dyslipidemia/f2/dys_areas.RData")
 
 sink()
 
