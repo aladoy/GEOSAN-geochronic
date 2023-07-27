@@ -13,12 +13,12 @@ setwd("/mnt/data/GEOSAN/RESEARCH PROJECTS/GEOCHRONIC @ LASIG (EPFL)/GEOSAN-geoch
 create_maps_outcome <- function(data, tol_contours, vars_list, outcome){
   
   for (var in vars_list) {
-    map_coefficients(data, paste0("gwr_", var), outcome, tol_contours, type = "estimates")
-    map_coefficients(data, paste0("mgwr_", var), outcome, tol_contours, type = "estimates")
-    map_coefficients(data, paste0("gwr_", var), outcome, tol_contours, type = "t-values")
-    map_coefficients(data, paste0("mgwr_", var), outcome, tol_contours, type = "t-values")
-    map_association(data, paste0("gwr_", var, "_TC"), outcome, tol_contours)
-    map_association(data, paste0("mgwr_", var, "_TC"), outcome, tol_contours)
+    map_coefficients(data, paste0("gwr_", var), outcome, tol_contours, type = "estimates", model="GWR")
+    map_coefficients(data, paste0("mgwr_", var), outcome, tol_contours, type = "estimates", model="MGWR")
+    map_coefficients(data, paste0("gwr_", var), outcome, tol_contours, type = "t-values", model="GWR")
+    map_coefficients(data, paste0("mgwr_", var), outcome, tol_contours, type = "t-values", model="MGWR")
+    map_association(data, paste0("gwr_", var, "_TC"), outcome, tol_contours, model="GWR")
+    map_association(data, paste0("mgwr_", var, "_TC"), outcome, tol_contours, model="MGWR")
   }
   
 }
@@ -41,6 +41,9 @@ hyp.interest <- c("intercept", "PM25", "MEDREV", "R_NN_CH")
 create_maps_outcome(hyp.data, hyp.tol, hyp.interest, "hypertension")
 map_condition_number(hyp.data, "hypertension", hyp.tol, model="gwr")
 map_condition_number(hyp.data, "hypertension", hyp.tol, model="mgwr")
+
+# map_association(hyp.data,"mgwr_MEDREV_TC", "hypertension", hyp.tol, model="GWR")
+# map_coefficients(hyp.data,"mgwr_MEDREV_TC", "hypertension", hyp.tol, model="GWR")
 
 # OBESITY -----------------------------------------------------------------
 

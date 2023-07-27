@@ -54,7 +54,7 @@ choropleth_map <- function(ha_df, ind_name, legend_name, title_name, class_type=
     theme_void() +
     theme(plot.background = element_rect(fill = "#f5f5f2", color = NA),
           panel.background = element_rect(fill = "#f5f5f2", color = NA),
-          plot.title = element_text(size = 16),
+          plot.title = element_text(size = 15),
           legend.position = c(0.2, 0.05),
           legend.title = element_text(size = 12),
           legend.text = element_text(size = 8),
@@ -78,13 +78,21 @@ cov <- c("INTDEN", "GREEN_SP", "NOISE", "PM25", "NO2", "MEDREV", "R_UNEMP", "R_N
 
 choropleth_map(ha, "INTDEN", "Intersection Density (-)", "Street connectivity within a 500-meters radius buffer")
 choropleth_map(ha, "GREEN_SP", "Greenness (%)", "Proportion of green spaces within a 500-meters radius buffer")
-choropleth_map(ha, "NOISE", "Noise (dB)", "Nihgttime Noise Exposure from Roadway and Railway Sources")
-choropleth_map(ha, "PM25", "Concentration (ug/m3)", "Exposure to fine particulate matter PM2.5")
-choropleth_map(ha, "NO2", "Concentration (ug/m3)", "Exposure to nitrogen dioxide (NO2)")
+choropleth_map(ha, "NOISE", "Noise (dB)", "Nihgttime Traffic Noise Exposure within a 500-meters radius buffer")
+choropleth_map(ha, "PM25", "Concentration (ug/m3)", "Exposure to PM2.5 within a 500-meters radius buffer")
+choropleth_map(ha, "NO2", "Concentration (ug/m3)", "Exposure to NO2 within a 500-meters radius buffer")
 choropleth_map(ha, "MEDREV", "Income (kCHF)", "Median annual income per household")
 choropleth_map(ha, "R_UNEMP", "Rate (%)", "Unemployment rate for population aged 15 and above")
 choropleth_map(ha, "R_NN_POBL", "Rate (%)", "Population aged 15+ with compulsory education")
 choropleth_map(ha, "R_NN_CH", "Rate (%)", "Proportion of foreign population")
+
+
+min_values <- ha %>% st_drop_geometry() %>% select(all_of(cov)) %>% summarise(across(everything(), min, na.rm = TRUE))
+max_values <- ha %>% select(all_of(cov)) %>% st_drop_geometry() %>% summarise(across(everything(), max, na.rm = TRUE))
+mean_values <- ha %>% st_drop_geometry() %>% select(all_of(cov)) %>% summarise(across(everything(), mean, na.rm = TRUE))
+print(mean_values)
+std_values <- ha %>% st_drop_geometry() %>% select(all_of(cov)) %>% summarise(across(everything(), sd, na.rm = TRUE))
+print(std_values)
 
 
 # CORRELATION -------------------------------------------------------------
