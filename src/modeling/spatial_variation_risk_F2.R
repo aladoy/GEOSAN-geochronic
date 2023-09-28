@@ -94,7 +94,7 @@ pairwise_violin_plot(hyp.areas$lrr.ha, cov.ha.soc, cov.ha.soc.labels, "hypertens
 
 # Check if some areas need to be merged / and removed areas without disease events
 map_high_risk_areas(hyp.areas$lrr.poly, laus$extent, "hypertension", bandwidth = hyp.bandwidth)
-compare_high_risk_area(hyp.areas, cov.indiv, cov.ha, excluded_polys=c(9, 10))
+compare_high_risk_area(hyp.areas, cov.indiv, cov.ha, excluded_polys=c(10, 13))
 
 # Save areas to .Rdata
 save(hyp.areas, file = "../results/spatial_disease_risk/hypertension/f2/hyp_areas.RData")
@@ -183,7 +183,7 @@ optimal_bandwidths(diab.events)
 #   global_clustering(diab.lrr$smacpod_risk)
 # }
 
-diab.bandwidth <- 200 
+diab.bandwidth <- 200
 cat(paste0("\nSelected bandwidth: ", diab.bandwidth, "\n"))
 
 diab.lrr <- log_ratio_spatial_dens(diab.events, diab.bandwidth, nsim=999, seed=12345, outcome_name="diabetes")
@@ -249,7 +249,7 @@ optimal_bandwidths(dys.events)
 #   global_clustering(dys.lrr$smacpod_risk)
 # }
 
-dys.bandwidth <- 200 
+dys.bandwidth <- 200
 
 cat(paste0("\nSelected bandwidth: ", dys.bandwidth, "\n"))
 
@@ -287,151 +287,6 @@ save(dys.areas, file = "../results/spatial_disease_risk/dyslipidemia/f2/dys_area
 
 sink()
 
-
-# # CVD ----------------------------------------------------------------
-# 
-# sink("../results/spatial_disease_risk/cvd/f2/spatial_variation_risk_cvd.txt")
-# cat(paste0("Date:", Sys.Date(),'\n')) #Overwrite the file
-# 
-# cvd.data <- select_outcome_spatial(indiv, "cvd", cov=cov.indiv)
-# plot_case_control(cvd.data, laus$extent, build, title='CVD')
-# 
-# # Create PPP
-# cvd.events <- create_ppp(cvd.data, laus$extent, marks=cvd.data$outcome, title="CVD - events")
-# 
-# # Log relative risk surface
-# optimal_bandwidths(cvd.events)
-# cvd.bandwidth <- 350 # Scott's rule
-# 
-# cvd.lrr <- log_ratio_spatial_dens(cvd.events, cvd.bandwidth, nsim=999, seed=12345, outcome_name="cvd")
-# 
-# # Save rasters to create maps in QGIS
-# save_raster_lrr(cvd.lrr, "cvd", cvd.bandwidth)
-# 
-# # SIGNIFICANT FACTORS BETWEEN HIGH-RISK, LOW-RISK, NOT SIGNIFICANT AREAS
-# 
-# # Extract data for risk areas
-# cvd.areas <- polygonize_logrr(cvd.lrr$smacpod_risk, ha %>% dplyr::select(reli, all_of(cov.ha), geometry), cvd.data)
-# map_extracted_areas(cvd.lrr, cvd.areas, "cvd")
-# 
-# # Plot significant areas
-# map_significant_areas(cvd.areas$lrr.poly, dem, basemap_type = "raster", title="CVD", bandwidth = cvd.bandwidth)
-# 
-# # Compare individual and neighborhood factors between risk areas
-# compare_areas(cvd.areas$lrr.indiv, cvd.areas$lrr.ha, cov.indiv, cov.ha)
-# pairwise_violin_plot(cvd.areas$lrr.ha, cov.ha.env, "cvd")
-# pairwise_violin_plot(cvd.areas$lrr.ha, cov.ha.soc, "cvd")
-# 
-# # SIGNIFICANT FACTORS FOR EACH HIGH-RISK AREA
-# 
-# # Check if some areas need to be merged
-# map_high_risk_areas(cvd.areas$lrr.poly, laus$extent, "cvd")
-# # Drop polygon 9
-# cvd.areas$lrr.poly[cvd.areas$lrr.poly$polyID ==9, "risk"] <- "Not significant"
-# 
-# #compare_high_risk_area(cvd.areas, cov.indiv, cov.ha, excluded_poly=c(9))
-# compare_high_risk_area(cvd.areas, cov.indiv, cov.ha)
-# 
-# sink()
-
-
-
-# # MULTIMORBIDITY ----------------------------------------------------------------
-# 
-# sink("../results/spatial_disease_risk/multimorbidity/f2/spatial_variation_risk_multimorbidity.txt")
-# cat(paste0("Date:", Sys.Date(),'\n')) #Overwrite the file
-# 
-# multi.data <- select_outcome_spatial(indiv, "multimorbidity", cov=cov.indiv)
-# plot_case_control(multi.data, laus$extent, build, title='Multimorbidity')
-# 
-# # Create PPP
-# multi.events <- create_ppp(multi.data, laus$extent, marks=multi.data$outcome, title="Multimorbidity - events")
-# 
-# # Log relative risk surface
-# optimal_bandwidths(multi.events)
-# multi.bandwidth <- 310 # Compromise of Scott's rule
-# 
-# cat(paste0("\nSelected bandwidth: ", multi.bandwidth, "\n"))
-# 
-# multi.lrr <- log_ratio_spatial_dens(multi.events, multi.bandwidth, nsim=999, seed=12345, outcome_name="multimorbidity")
-# global_clustering(multi.lrr$smacpod_risk)
-# 
-# # Save rasters to create maps in QGIS
-# save_raster_lrr(multi.lrr, "multimorbidity", multi.bandwidth)
-# 
-# # SIGNIFICANT FACTORS BETWEEN HIGH-RISK, LOW-RISK, NOT SIGNIFICANT AREAS
-# 
-# # Extract data for risk areas
-# multi.areas <- polygonize_logrr(multi.lrr$smacpod_risk, ha %>% dplyr::select(reli, all_of(cov.ha), geometry), multi.data)
-# map_extracted_areas(multi.lrr, multi.areas, "multimorbidity")
-# 
-# # Plot significant areas
-# map_significant_areas(multi.areas$lrr.poly, dem, basemap_type = "raster", title="Multimorbidity", bandwidth = multi.bandwidth)
-# 
-# # Compare individual and neighborhood factors between risk areas
-# compare_areas(multi.areas$lrr.indiv, multi.areas$lrr.ha, cov.indiv, cov.ha)
-# pairwise_violin_plot(multi.areas$lrr.ha, cov.ha.env, "multimorbidity")
-# pairwise_violin_plot(multi.areas$lrr.ha, cov.ha.soc, "multimorbidity")
-# 
-# # SIGNIFICANT FACTORS FOR EACH HIGH-RISK AREA
-# 
-# # Check if some areas need to be merged
-# map_high_risk_areas(multi.areas$lrr.poly, laus$extent, "multimorbidity")
-# # Drop polygon 10,11,13
-# multi.areas$lrr.poly[multi.areas$lrr.poly$polyID %in% c(10,11,13), "risk"] <- "Not significant"
-# 
-# compare_high_risk_area(multi.areas, cov.indiv, cov.ha)
-# 
-# sink()
-# 
-# 
-# 
-# 
-# # POLYPHARMACY ----------------------------------------------------------------
-# 
-# sink("../results/spatial_disease_risk/polypharmacy/f2/spatial_variation_risk_polypharmacy.txt")
-# cat(paste0("Date:", Sys.Date(),'\n')) #Overwrite the file
-# 
-# pharm.data <- select_outcome_spatial(indiv, "polypharmacy", cov=cov.indiv)
-# plot_case_control(pharm.data, laus$extent, build, title='Polypharmacy')
-# 
-# # Create PPP
-# pharm.events <- create_ppp(pharm.data, laus$extent, marks=pharm.data$outcome, title="Polypharmacy - events")
-# 
-# # Log relative risk surface
-# optimal_bandwidths(pharm.events)
-# pharm.bandwidth <- 300 # Compromise of Scott's rule
-# 
-# cat(paste0("\nSelected bandwidth: ", pharm.bandwidth, "\n"))
-# 
-# pharm.lrr <- log_ratio_spatial_dens(pharm.events, pharm.bandwidth, nsim=999, seed=12345, outcome_name="polypharmacy")
-# global_clustering(pharm.lrr$smacpod_risk)
-# 
-# # Save rasters to create maps in QGIS
-# save_raster_lrr(pharm.lrr, "polypharmacy", pharm.bandwidth)
-# 
-# # SIGNIFICANT FACTORS BETWEEN HIGH-RISK, LOW-RISK, NOT SIGNIFICANT AREAS
-# 
-# # Extract data for risk areas
-# pharm.areas <- polygonize_logrr(pharm.lrr$smacpod_risk, ha %>% dplyr::select(reli, all_of(cov.ha), geometry), pharm.data)
-# map_extracted_areas(pharm.lrr, pharm.areas, "polypharmacy")
-# 
-# # Plot significant areas
-# map_significant_areas(pharm.areas$lrr.poly, dem, basemap_type = "raster", title="Polypharmacy", bandwidth = pharm.bandwidth)
-# 
-# # Compare individual and neighborhood factors between risk areas
-# compare_areas(pharm.areas$lrr.indiv, pharm.areas$lrr.ha, cov.indiv, cov.ha)
-# pairwise_violin_plot(pharm.areas$lrr.ha, cov.ha.env, "polypharmacy")
-# pairwise_violin_plot(pharm.areas$lrr.ha, cov.ha.soc, "polypharmacy")
-# 
-# # SIGNIFICANT FACTORS FOR EACH HIGH-RISK AREA
-# 
-# # Check if some areas need to be merged
-# map_high_risk_areas(pharm.areas$lrr.poly, laus$extent, "polypharmacy")
-# 
-# compare_high_risk_area(pharm.areas, cov.indiv, cov.ha)
-# 
-# sink()
 
 
 DBI::dbDisconnect(con)

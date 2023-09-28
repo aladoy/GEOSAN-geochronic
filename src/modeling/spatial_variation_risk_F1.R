@@ -73,7 +73,7 @@ obes.events <- create_ppp(obes.data, laus$extent, marks=obes.data$outcome, title
 
 # Log relative risk surface
 optimal_bandwidths(obes.events)
-obes.bandwidth <- 200 
+obes.bandwidth <- 200
 
 cat(paste0("\nSelected bandwidth: ", obes.bandwidth, "\n"))
 
@@ -127,7 +127,7 @@ dys.events <- create_ppp(dys.data, laus$extent, marks=dys.data$outcome, title="D
 
 # Log relative risk surface
 optimal_bandwidths(dys.events)
-dys.bandwidth <- 200 
+dys.bandwidth <- 200
 
 cat(paste0("\nSelected bandwidth: ", dys.bandwidth, "\n"))
 
@@ -139,33 +139,6 @@ save_raster_lrr(dys.lrr, "dyslipidemia", dys.bandwidth, period=PERIOD)
 
 sink()
 
-
-
-# # CVD ----------------------------------------------------------------
-# 
-# sink("../results/spatial_disease_risk/cvd/f1/spatial_variation_risk_cvd.txt")
-# cat(paste0("Date:", Sys.Date(),'\n')) #Overwrite the file
-# 
-# cvd.data <- select_outcome_spatial(indiv, "cvd", cov=NULL, period=PERIOD)
-# plot_case_control(cvd.data, laus$extent, build, title='CVD', period=PERIOD)
-# 
-# 
-# # Create PPP
-# cvd.events <- create_ppp(cvd.data, laus$extent, marks=cvd.data$outcome, title="CVD - events")
-# 
-# # Log relative risk surface
-# optimal_bandwidths(cvd.events)
-# cvd.bandwidth <- 350 # Compromise of Scott's rule
-# 
-# cat(paste0("\nSelected bandwidth: ", cvd.bandwidth, "\n"))
-# 
-# cvd.lrr <- log_ratio_spatial_dens(cvd.events, cvd.bandwidth, nsim=999, seed=12345, outcome_name="cvd", period=PERIOD)
-# global_clustering(cvd.lrr$smacpod_risk)
-# 
-# # Save rasters to create maps in QGIS
-# save_raster_lrr(cvd.lrr, "cvd", cvd.bandwidth, period=PERIOD)
-# 
-# sink()
 
 
 DBI::dbDisconnect(con)

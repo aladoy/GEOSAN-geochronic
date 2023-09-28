@@ -64,7 +64,9 @@ choropleth_map <- function(ha_df, ind_name, legend_name, title_name, class_type=
          #subtitle = "Source: Table QS502EW, Census 2011",                             
          #caption = "Contains OS data © Crown copyright and database right (2018)"
     ) +
-    annotation_scale(location = "br", width_hint = 0.2, style="ticks") 
+    annotation_scale(location = "br", width_hint = 0.2, style="ticks") +
+    annotate("text", x = 2536430, y = 1151250, label = "Lake Geneva", fontface = "italic", color = "#487388", size=3.5, angle = -20)
+  
   
   ggsave(paste0("../results/env_characteristics/choropleth_", ind_name, ".png"), 
          bg="white", width=200, height=150, units=c("mm"), dpi=300)

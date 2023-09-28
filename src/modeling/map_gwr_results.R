@@ -9,6 +9,8 @@ require(RPostgreSQL)
 source('modeling/utils_map_gwr_results.R')
 setwd("/mnt/data/GEOSAN/RESEARCH PROJECTS/GEOCHRONIC @ LASIG (EPFL)/GEOSAN-geochronic/src/")
 
+# map_coefficients(hyp.data, paste0("gwr_PM25"), "hypertension", hyp.tol, type = "estimates", model="GWR")
+# DBI::dbDisconnect(con)
 
 create_maps_outcome <- function(data, tol_contours, vars_list, outcome){
   
@@ -35,7 +37,7 @@ hyp.tol <- st_read("../results/spatial_disease_risk/hypertension/f2/tolerance_co
 hyp.data <- st_read("../results/regression_models/hypertension/hypertension_adj_spatreg_results.gpkg")
 
 # Variables with significant associations
-hyp.interest <- c("intercept", "PM25", "MEDREV", "R_NN_CH")
+hyp.interest <- c("PM25", "MEDREV")
 # Few variations in bandwidths. It seems that all variables at a global level, and that GWR and MGWR do not show strong difference
 
 create_maps_outcome(hyp.data, hyp.tol, hyp.interest, "hypertension")

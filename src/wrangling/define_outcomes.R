@@ -151,20 +151,20 @@ for (period in periods){
 
   if(period=="b"){
 
-    outcomes.hypertension <- "antihta"
-    write("definition: antihypertensive drug treatment (antihta=1).", f)
+    outcomes.hypertension <- "hta"
+    write("definition: hypertension defined as >140/90 and/or antihypertensive drug treatment (hta=1).", f)
 
 
   }else if(period=="f1"){
 
-    outcomes.hypertension <- "f1antihta"
-    write("definition: antihypertensive drug treatment (f1hta=1).", f)
+    outcomes.hypertension <- "f1hta"
+    write("definition: hypertension defined as >140/90 and/or antihypertensive drug treatment (f1hta=1).", f)
 
 
   }else if(period=="f2"){
 
-    outcomes.hypertension <- "f2antihta"
-    write("definition: antihypertensive drug treatment (f2antihta=1)", f)
+    outcomes.hypertension <- "f2hta"
+    write("definition: hypertension defined as >140/90 and/or antihypertensive drug treatment (f2hta=1)", f)
   }
 
   lapply(outcomes.hypertension, count_distinct_val, data=data) %>% capture(f)

@@ -40,9 +40,9 @@ def main():
 
     # execute_code(subdir_db, "create_study_dataset.py")
     
-    # ESDA
-    execute_code(subdir_descr, "describe_participants.R",
-                 interpreter='Rscript')
+    # # ESDA
+    # execute_code(subdir_descr, "describe_participants.R",
+    #              interpreter='Rscript')
 
     # # Spatial variation of risk
     # execute_code(subdir_model, "spatial_variation_risk_baseline.R",
@@ -55,9 +55,12 @@ def main():
     # # Spatial modeling
     # execute_code(subdir_model, "confounders_adjustment.R",
     #              interpreter='Rscript')
-    # execute_code(subdir_model, "ols.R",
+    # execute_code(subdir_model, "model_env_associations.py")
+
+    # # Map results
+    # #   Generate tolerance contours in QGIS and then:
+    # execute_code(subdir_model, "map_gwr_results.R",
     #              interpreter='Rscript')
-    # execute_code(subdir_model, "mgwr.py")
 
 
 def execute_code(program_subdir, program_name, interpreter="python"):

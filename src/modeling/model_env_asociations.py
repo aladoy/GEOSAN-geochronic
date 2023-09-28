@@ -73,8 +73,8 @@ def main():
 
 
     # REGRESSION MODELS
-    # compute_ols(data, "hypertension_adj", env_vars)
-    # compute_spatial_regression(data, "hypertension", env_vars, pool, is_binomial=False)
+    compute_ols(data, "hypertension_adj", env_vars)
+    compute_spatial_regression(data, "hypertension", env_vars, pool, is_binomial=False)
 
     #compute_ols(data, "obesity_adj", env_vars)
     # compute_spatial_regression(data, "obesity", env_vars, pool, is_binomial=False)
@@ -82,8 +82,8 @@ def main():
     # compute_ols(data, "diabetes_adj", env_vars)
     # compute_spatial_regression(data, "diabetes", env_vars, pool, is_binomial=False)
     
-    compute_ols(data, "dyslipidemia_adj", env_vars)
-    compute_spatial_regression(data, "dyslipidemia", env_vars, pool, is_binomial=False)
+    # compute_ols(data, "dyslipidemia_adj", env_vars)
+    # compute_spatial_regression(data, "dyslipidemia", env_vars, pool, is_binomial=False)
 
     # # hypertension
     # data = gpd.read_file("processed_data/hypertension_mgwr.gpkg")
@@ -219,7 +219,7 @@ def add_gwr_results(df, gwr_results, vars_list, type="gwr", is_binomial=True):
         df[f"{type}_{var}_T"], df[f"{type}_{var}_TC"] = filter_for_inference(gwr_results,
                                                                              type, i+1)
 
-    df[f"{type}_R2"] = gwr_results.localR2
+    # df[f"{type}_R2"] = gwr_results.localR2
 
     # Extract measures of local collinearity
     lc = gwr_results.local_collinearity()

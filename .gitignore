@@ -10,3 +10,5 @@ results/
 src/.Rprofile
 src/.Rhistory
 .vscode/
+manuscript/
+src/.RData
